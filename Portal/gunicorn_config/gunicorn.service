@@ -1,0 +1,25 @@
+[Unit]
+
+Description=gunicorn daemon
+
+Requires=gunicorn.socket
+
+After=network.target
+
+[Service]
+
+User=ahmed
+
+Group=www-data
+
+#WorkingDirectory=/home/ahmed/Desktop/AHMED/Django_Websites/report_portal/Portal
+
+WorkingDirectory=/home/ahmed/Desktop/AHMED/Django_Websites
+
+ExecStart=/home/ahmed/Desktop/AHMED/Django_Websites/virutal/bin/gunicorn --workers 3 --bind unix:/etc/systemd/system/gunicorn.socket Portal.wsgi:application
+
+
+
+[Install]
+
+WantedBy=multi-user.target

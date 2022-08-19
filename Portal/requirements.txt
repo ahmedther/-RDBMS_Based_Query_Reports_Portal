@@ -1,0 +1,8 @@
+django
+whitenoise
+cx_Oracle
+pandas
+XlsxWriter
+psycopg2
+gunicorn
+

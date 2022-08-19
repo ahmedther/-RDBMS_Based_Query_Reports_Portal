@@ -1,0 +1,94 @@
+
+{% extends "reports/base.html" %}
+
+{% block content %}
+
+
+
+<form method='POST'>
+    {% csrf_token %}
+
+	<div class="d-flex justify-content-center">
+		<div class='btnhold'>
+		<h2><div class="badge bg-primary text-wrap" style="width: 275px;margin-right: 40px;margin-bottom: 10px;">Date {{ date_form.from_date }}</div>
+		</div></div>
+
+        <div class="d-flex justify-content-center">
+			<div class='btnhold' style="width: 600px;margin-bottom: 20px;">
+		<select name="location_code" class="form-select" aria-label="Facility Select Options">
+			<option value="" disabled selected hidden>Please Select A Location From This List</option>
+			<option value='CP00'>CP Pharmacy</option>
+		  </select></div></div>
+    
+        
+	
+
+	<div class="d-flex justify-content-center">
+    <div class='btnhold'>
+        <button type="submit" class="btn btn-primary btn-lg mr-5" style='width:275px'>Search</button>
+    
+        <button type="button"  onclick="export_data()" class="btn btn-secondary btn-lg" style='width:275px'>Download</button> 
+	</div></div>
+    </form>
+
+    {% if search_indents_by_code_data %}
+
+	
+
+    <section class="ftco-section">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-md-6 text-center mb-5">
+					<h2 class="heading-section">{{ page_name }}</h2>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
+					<div class="table-wrap">
+						<table class="table" id="table_id">
+						  <thead class="thead-dark">
+                            
+						    <tr>
+                                {% if search_indents_by_code_column_name %}
+                                {% for column in search_indents_by_code_column_name %}
+						      <th>{{ column }}</th>
+						      
+                              {% endfor %}
+                              {% endif %}
+                              <th>&nbsp;</th>
+						    </tr>
+                           
+						  </thead>
+						  <tbody>
+                            
+						    <tr class="alert" role="alert">
+                                {% for data in search_indents_by_code_data %}
+                                {% for i in data %}
+                                <td>{{ i }}</td>
+                                {% endfor %}
+                                
+						      <td>
+						      	<a href="#" class="close" data-dismiss="alert" aria-label="Close">
+				            	<span aria-hidden="true"><i class="fa fa-close"></i></span>
+				          	
+				          	</a>
+				        	</td>
+						    </tr>{% endfor %}
+                            
+						  </tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+
+
+						        
+
+      
+      
+
+{% endif %}
+{% endblock %}

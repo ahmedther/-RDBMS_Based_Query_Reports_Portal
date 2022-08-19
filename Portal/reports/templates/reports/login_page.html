@@ -1,0 +1,119 @@
+{% load static %}
+
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href={% static 'reports/favicon.ico' %} type="image/x-icon">
+        <link rel="stylesheet" href="{% static 'reports/login_page.css' %}" />
+        <title>Query Reports Portal Login</title>
+        <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+
+        <!--Stylesheet-->
+        <style media="screen"></style>
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css"
+            integrity="sha512-5A8nwdMOWrSz20fDsjczgUidUBR8liPYU+WymTZP1lmY9G6Oc7HlZv156XqnsgNUzTyMefFTcsFH/tnJE/+xBg=="
+            crossorigin="anonymous" />
+
+    </head>
+
+    <body>
+        <video autoplay muted loop id="background_vid">
+            <source src="{% static 'reports/background_vid.mp4' %}" type=" video/mp4">
+        </video>
+
+        <div class="background">
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+        <form method='POST'>
+            {% csrf_token %}
+            <h3>Reports Portal Login</h3>
+            <label for="username">Username</label>
+            <input type="text" required name='username' id="username" placeholder="User ID">
+
+            <label for="password">Password</label>
+            <input type="password" required placeholder="Password" name='password' id="password">
+
+            <button type="submit"> Login </button>
+            <a href="{% url 'signupuser' %}"><button type="button">Sign Up</button></a>
+
+        </form>
+
+        {% if success %}
+        <div class="alert alert-success">
+            <span class="icon">
+                <i class="fa fa-check"></i>
+            </span>
+
+            <div class="text">
+                <strong>Success</strong>
+                <p>{{ success }}</p>
+            </div>
+
+            <button class="close">
+                <i class="fa fa-close"></i>
+            </button>
+
+        </div>
+        {% endif %}
+
+        {% if success1 %}
+        <div class="alert alert-success">
+            <span class="icon">
+                <i class="fa fa-check"></i>
+            </span>
+
+            <div class="text">
+                <strong>Success</strong>
+                <p>{{ success1 }}</p>
+            </div>
+
+            <button class="close">
+                <i class="fa fa-close"></i>
+            </button>
+
+        </div>
+        {% endif %}
+
+
+
+
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <span class="icon">
+                <i class="fa fa-close"></i>
+            </span>
+
+            <div class="text">
+                <strong>Error</strong>
+                <h3>{{ error }}</h3>
+            </div>
+
+            <button class="close">
+                <i class="fa fa-close"></i>
+            </button>
+
+        </div>
+
+        {% endif %}
+
+
+
+    </body>
+
+    <footer>
+
+        <p>&copy; 2022 Kokilaben Hospital</p>
+
+
+    </footer>
+    <script src="{% static 'reports/login_page.js' %}"></script>
+
+</html>
