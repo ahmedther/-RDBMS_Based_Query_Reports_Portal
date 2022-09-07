@@ -28,9 +28,9 @@ urlpatterns = [
         name="restricted_antimicrobials_consumption_report",
     ),
     path(
-        "important_antimicrobials_antibiotics_consumption_report/",
-        views.important_antimicrobials_antibiotics_consumption_report,
-        name="important_antimicrobials_antibiotics_consumption_report",
+        "pharmacy_itemwise_sale_report/",
+        views.pharmacy_itemwise_sale_report,
+        name="pharmacy_itemwise_sale_report",
     ),
     path(
         "pharmacy_indent_report/",
@@ -172,6 +172,11 @@ urlpatterns = [
         name="new_code_creation",
     ),
     path(
+        "tvd_cabg_request/",
+        views.tvd_cabg_request,
+        name="tvd_cabg_request",
+    ),
+    path(
         "predischarge_medication/",
         views.predischarge_medication,
         name="predischarge_medication",
@@ -302,6 +307,11 @@ urlpatterns = [
         name="tpa_current_inpatients",
     ),
     path(
+        "tpa_cover_letter/",
+        views.tpa_cover_letter,
+        name="tpa_cover_letter",
+    ),
+    path(
         "total_number_of_ip_patients_by_doctors/",
         views.total_number_of_ip_patients_by_doctors,
         name="total_number_of_ip_patients_by_doctors",
@@ -391,6 +401,11 @@ urlpatterns = [
         "patient_discharge_report/",
         views.patient_discharge_report,
         name="patient_discharge_report",
+    ),
+    path(
+        "corporate_discharge_report/",
+        views.corporate_discharge_report,
+        name="corporate_discharge_report",
     ),
     path(
         "credit_letter_report/", views.credit_letter_report, name="credit_letter_report"

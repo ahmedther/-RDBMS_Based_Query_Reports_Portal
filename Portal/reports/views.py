@@ -1,3 +1,7 @@
+from multiprocessing import context
+import platform
+import pandas as pd
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -6,7 +10,6 @@ from django.db import IntegrityError
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.http import FileResponse, HttpResponse
-import pandas as pd
 
 
 from .connections import Oracle
@@ -15,7 +18,12 @@ from .decorators import unauthenticated_user, allowed_users
 from .forms import DateForm, DateTimeForm
 from .models import IAACR, FacilityDropdown, Employee
 from .new_db_oracle import NewDB_Ora
-from .supports import date_formater, excel_generator, input_validator
+from .supports import (
+    date_formater,
+    excel_generator,
+    excel_generator_tpa,
+    input_validator,
+)
 
 
 # Create your views here.
@@ -181,10 +189,8 @@ def base(request):
             name="Pharmacy - Restricted Antimicrobials Consumption Report"
         )
     )
-    important_antimicrobials_antibiotics_consumption_report_permission = (
-        request.user.groups.filter(
-            name="Pharmacy - Important Antimicrobials / Antibiotics Consumption Report"
-        )
+    pharmacy_itemwise_sale_report_permission = request.user.groups.filter(
+        name="Pharmacy - Pharmacy Itemwise Sale Report"
     )
     pharmacy_indent_report_permission = request.user.groups.filter(
         name="Pharmacy - Pharmacy Indent Report"
@@ -282,6 +288,9 @@ def base(request):
     )
     new_code_creation_permission = request.user.groups.filter(
         name="Pharmacy - New Code Creation"
+    )
+    tvd_cabg_request_permission = request.user.groups.filter(
+        name="Pharmacy - TVD CABG Request"
     )
     predischarge_medication_permission = request.user.groups.filter(
         name="Pharmacy - Predischarge Medication"
@@ -403,6 +412,9 @@ def base(request):
     tpa_current_inpatients_permission = request.user.groups.filter(
         name="Clinical Administration - TPA Current Inpatients"
     )
+    tpa_cover_letter_permission = request.user.groups.filter(
+        name="Clinical Administration - TPA Cover Letter"
+    )
     total_number_of_ip_patients_by_doctors_permission = request.user.groups.filter(
         name="Clinical Administration - Total Number of IP Patients by Doctors"
     )
@@ -495,6 +507,9 @@ def base(request):
     )
     patient_discharge_report_permission = request.user.groups.filter(
         name="Marketing - Patient Discharge Report"
+    )
+    corporate_discharge_report_permission = request.user.groups.filter(
+        name="Marketing - Corporate Discharge Report"
     )
     credit_letter_report_permission = request.user.groups.filter(
         name="Marketing - Credit Letter Report"
@@ -596,7 +611,7 @@ def base(request):
             "batchwise_stock_report_permission": batchwise_stock_report_permission,
             "pharmacy_op_returns_permission": pharmacy_op_returns_permission,
             "restricted_antimicrobials_consumption_report_permission": restricted_antimicrobials_consumption_report_permission,
-            "important_antimicrobials_antibiotics_consumption_report_permission": important_antimicrobials_antibiotics_consumption_report_permission,
+            "pharmacy_itemwise_sale_report_permission": pharmacy_itemwise_sale_report_permission,
             "pharmacy_indent_report_permission": pharmacy_indent_report_permission,
             "new_admission_indents_report_permission": new_admission_indents_report_permission,
             "return_medication_without_return_request_report_permission": return_medication_without_return_request_report_permission,
@@ -629,6 +644,7 @@ def base(request):
             "sale_consumption_report_permission": sale_consumption_report_permission,
             "sale_consumption_report1_permission": sale_consumption_report1_permission,
             "new_code_creation_permission": new_code_creation_permission,
+            "tvd_cabg_request_permission": tvd_cabg_request_permission,
             "predischarge_medication_permission": predischarge_medication_permission,
             "predischarge_initiate_permission": predischarge_initiate_permission,
             "intransites_unf_sal_ret_permission": intransites_unf_sal_ret_permission,
@@ -670,6 +686,7 @@ def base(request):
             "cco_billing_count_report_permission": cco_billing_count_report_permission,
             "total_number_of_online_consultation_by_doctors_permission": total_number_of_online_consultation_by_doctors_permission,
             "tpa_current_inpatients_permission": tpa_current_inpatients_permission,
+            "tpa_cover_letter_permission": tpa_cover_letter_permission,
             "total_number_of_ip_patients_by_doctors_permission": total_number_of_ip_patients_by_doctors_permission,
             "total_number_of_op_patients_by_doctors_permission": total_number_of_op_patients_by_doctors_permission,
             "opd_changes_report_permission": opd_changes_report_permission,
@@ -692,6 +709,7 @@ def base(request):
             "marketing_permission": marketing_permission,
             "contract_effective_date_report_permission": contract_effective_date_report_permission,
             "patient_discharge_report_permission": patient_discharge_report_permission,
+            "corporate_discharge_report_permission":corporate_discharge_report_permission,
             "admission_report_permission": admission_report_permission,
             "credit_letter_report_permission": credit_letter_report_permission,
             "corporate_ip_report_permission": corporate_ip_report_permission,
@@ -1025,21 +1043,21 @@ def restricted_antimicrobials_consumption_report(request):
 
 
 @login_required(login_url="login")
-@allowed_users("Pharmacy - Important Antimicrobials / Antibiotics Consumption Report")
-def important_antimicrobials_antibiotics_consumption_report(request):
+@allowed_users("Pharmacy - Pharmacy Itemwise Sale Report")
+def pharmacy_itemwise_sale_report(request):
     drugs = IAACR.objects.all()
-
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Pharmacy Itemwise Sale Report",
+        "date_form": DateForm(),
+        "drugs": drugs,
+    }
     if request.method == "GET":
 
         return render(
             request,
-            "reports/important_antimicrobials_antibiotics_consumption_report.html",
-            {
-                "user_name": request.user.username,
-                "page_name": "Important Antimicrobials / Antibiotics Consumption Report",
-                "date_form": DateForm(),
-                "drugs": drugs,
-            },
+            "reports/pharmacy_itemwise_sale_report.html",
+            context,
         )
 
     elif request.method == "POST":
@@ -1052,34 +1070,28 @@ def important_antimicrobials_antibiotics_consumption_report(request):
 
         db = Ora()
         (
-            important_antimicrobials_antibiotics_consumption_report_value,
+            pharmacy_itemwise_sale_report_value,
             column_name,
-        ) = db.get_important_antimicrobials_antibiotics_consumption_report(
-            drug_code, from_date, to_date
-        )
+        ) = db.get_pharmacy_itemwise_sale_report(drug_code, from_date, to_date)
         excel_file_path = excel_generator(
-            page_name="Important Antimicrobials / Antibiotics Consumption Report",
-            data=important_antimicrobials_antibiotics_consumption_report_value,
+            page_name="Pharmacy Itemwise Sale Report",
+            data=pharmacy_itemwise_sale_report_value,
             column=column_name,
         )
 
-        if not important_antimicrobials_antibiotics_consumption_report_value:
+        if not pharmacy_itemwise_sale_report_value:
+            context["error"] = "Sorry!!! No Data Found"
             return render(
                 request,
-                "reports/important_antimicrobials_antibiotics_consumption_report.html",
-                {
-                    "error": "Sorry!!! No Data Found",
-                    "user_name": request.user.username,
-                    "date_form": DateForm(),
-                    "drugs": drugs,
-                },
+                "reports/pharmacy_itemwise_sale_report.html",
+                context,
             )
 
         else:
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/important_antimicrobials_antibiotics_consumption_report.html', {'important_antimicrobials_antibiotics_consumption_report':important_antimicrobials_antibiotics_consumption_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'drugs' : drugs})
+            # return render(request,'reports/pharmacy_itemwise_sale_report.html', {'pharmacy_itemwise_sale_report':pharmacy_itemwise_sale_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'drugs' : drugs})
 
 
 @login_required(login_url="login")
@@ -2119,16 +2131,13 @@ def pharmacy_op_sale_report_userwise(request):
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Pharmacy Consumption Report")
 def pharmacy_consumption_report(request):
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Pharmacy Consumption Report",
+        "date_form": DateForm(),
+    }
     if request.method == "GET":
-        return render(
-            request,
-            "reports/pharmacy_consumption_report.html",
-            {
-                "user_name": request.user.username,
-                "page_name": "Pharmacy Consumption Report",
-                "date_form": DateForm(),
-            },
-        )
+        return render(request, "reports/pharmacy_consumption_report.html", context)
 
     elif request.method == "POST":
         # Manually format To Date fro Sql Query
@@ -2147,15 +2156,8 @@ def pharmacy_consumption_report(request):
         )
 
         if not pharmacy_consumption_report_value:
-            return render(
-                request,
-                "reports/pharmacy_consumption_report.html",
-                {
-                    "error": "Sorry!!! No Data Found",
-                    "user_name": request.user.username,
-                    "date_form": DateForm(),
-                },
-            )
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/pharmacy_consumption_report.html", context)
 
         else:
             return FileResponse(
@@ -2540,6 +2542,44 @@ def new_code_creation(request):
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
             # return render(request,'reports/new_code_creation.html', {"date_form": DateForm(),'new_code_creation_data':new_code_creation_data,"new_code_creation_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - TVD CABG Request")
+def tvd_cabg_request(request):
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Pharmacy - TVD CABG Request",
+        "date_form": DateForm(),
+    }
+    if request.method == "GET":
+
+        return render(request, "reports/tvd_cabg_request.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+        db = Ora()
+        (
+            tvd_cabg_request_data,
+            tvd_cabg_request_data_column_name,
+        ) = db.get_tvd_cabg_request(from_date, to_date)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=tvd_cabg_request_data,
+            column=tvd_cabg_request_data_column_name,
+        )
+
+        if not tvd_cabg_request_data:
+            context["error"] = ("Sorry!!! No Data Found",)
+            return render(request, "reports/tvd_cabg_request.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/tvd_cabg_request.html', {"date_form": DateForm(),'tvd_cabg_request_data':tvd_cabg_request_data,"tvd_cabg_request_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
 
 
 @login_required(login_url="login")
@@ -4413,6 +4453,53 @@ def tpa_current_inpatients(request):
 
 
 @login_required(login_url="login")
+@allowed_users("Clinical Administration - TPA Cover Letter")
+def tpa_cover_letter(request):
+    context = {
+        "user_name": request.user.username,
+        "page_name": "TPA Cover Letter",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/tpa_cover_letter.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        (
+            tpa_cover_letter_value,
+            column_name,
+        ) = db.get_tpa_cover_letter(from_date, to_date)
+        system_os = platform.system()
+        if system_os == "Linux":
+            excel_file_path = excel_generator(
+                data=tpa_cover_letter_value,
+                column=column_name,
+                page_name=context["page_name"],
+            )
+        else:
+            excel_file_path = excel_generator_tpa(
+                data=tpa_cover_letter_value,
+                column=column_name,
+                page_name=context["page_name"],
+            )
+
+        if not tpa_cover_letter_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/tpa_cover_letter.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/tpa_cover_letter.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.username,'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
 @allowed_users("Clinical Administration - Total Number of IP Patients by Doctors")
 def total_number_of_ip_patients_by_doctors(request):
     if request.method == "GET":
@@ -5733,6 +5820,65 @@ def patient_discharge_report(request):
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
             # return render(request,'reports/patient_discharge_report.html', {'patient_discharge_report_value':patient_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+
+
+
+
+
+@login_required(login_url="login")
+@allowed_users("Marketing - Corporate Discharge Report")
+def corporate_discharge_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Corporate Discharge Report",
+        "date_form": DateForm(),
+        "facilities": facility,
+    }
+    if request.method == "GET":
+        return render(request, "reports/corporate_discharge_report.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/schedule_h1_drug_report.html", context)
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        corporate_discharge_report_value, column_name = db.get_corporate_discharge_report(
+            facility_code, from_date, to_date
+        )
+
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=corporate_discharge_report_value,
+            column=column_name,
+        )
+
+        if not corporate_discharge_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/corporate_discharge_report.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/corporate_discharge_report.html', {'corporate_discharge_report_value':corporate_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+
+
 
 
 @login_required(login_url="login")

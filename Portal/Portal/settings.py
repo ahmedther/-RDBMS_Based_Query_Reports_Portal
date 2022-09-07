@@ -23,22 +23,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-(ie6=js6l2!i0y=4az2*vgsz*q$isj9rar4oa95%j%r$bq%f_9"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
 
-# DEBUG = True
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "172.20.100.81",
-    "http://localhost:8001",
-    "http://172.20.100.81:8001",
-    "http://localhost:8002",
-    "http://172.20.100.81:8002",
-    "172.20.200.40",
-    "http://172.20.200.40:8001",
-    "www.kdahlinux.com:8001",
-]
+DEBUG = True
+
+# DEBUG = False
+
+# ALLOWED_HOSTS = [
+#     "127.0.0.1",
+#     "localhost",
+#     "172.20.100.81",
+#     "http://localhost:8001",
+#     "http://172.20.100.81:8001",
+#     "http://localhost:8002",
+#     "http://172.20.100.81:8002",
+#     "172.20.200.40",
+#     "http://172.20.200.40:8001",
+#     "www.kdahlinux.com:8001",
+# ]
+
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "127.0.0.1",
+#     "localhost",
+#     "172.20.100.81",
+#     "http://localhost:8001",
+#     "http://172.20.100.81:8001",
+#     "http://localhost:8002",
+#     "http://172.20.100.81:8002",
+#     "172.20.200.40",
+#     "http://172.20.200.40:8001",
+#     "www.kdahlinux.com:8001",
+# ]
 
 
 # Application definition
@@ -187,16 +203,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # AUTH_USER_MODEL = 'reports.CustUser'
-
-CSRF_TRUSTED_ORIGINS = [
-    "127.0.0.1",
-    "localhost",
-    "172.20.100.81",
-    "http://localhost:8001",
-    "http://172.20.100.81:8001",
-    "http://localhost:8002",
-    "http://172.20.100.81:8002",
-    "172.20.200.40",
-    "http://172.20.200.40:8001",
-    "www.kdahlinux.com:8001",
-]

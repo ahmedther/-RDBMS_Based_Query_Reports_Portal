@@ -8,26 +8,16 @@
 
 body {
     /* background-image: url("login_background.jpg"); */
-    background-color: #000000
+    background-color: #080710
 }
 
 #background_vid {
-    position: absolute;
-    top: 0;
-    bottom: 0;
+    position: fixed;
     right: 0;
-    left: 0;
-    margin: auto;
-    min-height: 100vh;
-    min-width: 100vh;
-
-    /* max-width: 60rem;
-        max-height: 60.875rem; */
-
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
 }
-
-
-
 
 .background {
     width: 430px;

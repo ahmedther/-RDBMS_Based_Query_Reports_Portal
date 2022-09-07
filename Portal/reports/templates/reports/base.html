@@ -140,7 +140,7 @@
                 
 								<ul class="list-unstyled">
                     {% if restricted_antimicrobials_consumption_report_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'restricted_antimicrobials_consumption_report' %}>Restricted Antimicrobials Consumption Report</a>{% endif %}
-                      {% if important_antimicrobials_antibiotics_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'important_antimicrobials_antibiotics_consumption_report' %}>Important Antimicrobials / Antibiotics Consumption Report</a>{% endif %}
+                      {% if pharmacy_itemwise_sale_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_itemwise_sale_report' %}>Pharmacy Itemwise Sale Report</a>{% endif %}
                         {% if pharmacy_indent_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_indent_report' %}>Pharmacy Indent Report</a>{% endif %}
                           {% if new_admission_indents_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'new_admission_indents_report' %}>New Admission’s Indents Report</a>{% endif %}
                             {% if return_medication_without_return_request_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'return_medication_without_return_request_report' %}>Return Medication Without Return Request Report</a>{% endif %}
@@ -186,6 +186,7 @@
                                   {% if sale_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'sale_consumption_report' %}>Sale Consumption Report</a>{% endif %}
                                     {% if sale_consumption_report1_permission %}<li><a class="dropdown-item text-wrap" href={% url 'sale_consumption_report1' %}>Sale Consumption Report 1</a>{% endif %}
                                       {% if new_code_creation_permission %}<li><a class="dropdown-item text-wrap" href={% url 'new_code_creation' %}>New Code Creation</a>{% endif %}
+                                        {% if tvd_cabg_request_permission %}<li><a class="dropdown-item text-wrap" href={% url 'tvd_cabg_request' %}>TVD CABG Request</a>{% endif %}
                                   
 								</ul>
 							</div>  <!-- col-megamenu.// -->
@@ -291,6 +292,7 @@
                               {% if cco_billing_count_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cco_billing_count_report' %}>CCO Billing Count Report</a>{% endif %}
                                 {% if total_number_of_online_consultation_by_doctors_permission %}<li><a class="dropdown-item text-wrap" href={% url 'total_number_of_online_consultation_by_doctors' %}>Total Number of Online Consultation by Doctors</a>{% endif %}
                                   {% if tpa_current_inpatients_permission %}<li><a class="dropdown-item text-wrap" href={% url 'tpa_current_inpatients' %}>TPA Current Inpatients</a>{% endif %}
+                                    {% if tpa_cover_letter_permission %}<li><a class="dropdown-item text-wrap" href={% url 'tpa_cover_letter' %}>TPA Cover Letter</a>{% endif %}
                 </ul>
               </div>  <!-- col-megamenu.// -->
             </div><!-- end col-3 -->
@@ -343,6 +345,7 @@
                 {% if contract_effective_date_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'contract_effective_date_report' %}>Contract Effective Date Report</a>{% endif %}
                   {% if admission_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admission_report' %}>Admission Reports</a>{% endif %}
                     {% if patient_discharge_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patient_discharge_report' %}>Patient Discharge Report</a>{% endif %}
+                      {% if corporate_discharge_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'corporate_discharge_report' %}>Corporate Discharge Report</a>{% endif %}
             </ul>
             </div>  <!-- col-megamenu.// -->
           </div><!-- end col-3 -->

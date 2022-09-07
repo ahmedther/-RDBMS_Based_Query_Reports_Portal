@@ -5,4 +5,5 @@ pandas
 XlsxWriter
 psycopg2
 gunicorn
-
+xlwings
+pywin32
