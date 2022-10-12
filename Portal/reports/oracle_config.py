@@ -1278,6 +1278,101 @@ order by added_Date desc
 
         return tvd_cabg_request_data, column_name
 
+    def get_stock_amount_wise_store_code(self):
+        stock_amount_wise_store_code = """
+        
+        select distinct STORE_CODE, STORE_DESC from ST_BATCH_SEARCH_LANG_VIEW
+
+        
+        """
+
+        self.cursor.execute(stock_amount_wise_store_code)
+        data = self.cursor.fetchall()
+
+        # only print head
+        column_name = [i[0] for i in self.cursor.description]
+
+        # column info
+        # for x in self.cursor.description:
+        #     print(x)
+
+        if self.cursor:
+            self.cursor.close()
+
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data
+
+    def get_stock_amount_wise(self, from_amount, to_amount, store_code):
+        if store_code == "ALL":
+            stock_amount_wise_qurey = f"""
+        
+            SELECT a.ITEM_CODE "Item Code", a.ITEM_DESC "Description",
+            a.STORE_CODE "Store Code",SUM(a.QTY_ON_HAND)"Qty On Hand",
+            sum(a.AVAIL_QTY) "Avail.Stock",sum(a.QTY_ON_HAND-a.AVAIL_QTY) "In Transit Stock",
+            d.last_receipt_date "Last Inward",
+            case 
+            when (d.material_group_code = 'KDHMD3') then ('Pharma')
+            when (d.material_group_code<> 'KDHMD3') then ('surgical')
+            else null
+            end as "Material Category"
+            FROM IBAEHIS.ST_BATCH_SEARCH_LANG_VIEW a
+            left join ST_BATCH_CONTROL b on ( a.ITEM_CODE=b.ITEM_CODE and a.BATCH_ID=b.BATCH_ID  and a.EXPIRY_DATE=b.EXPIRY_DATE_OR_RECEIPT_DATE)
+            left join st_item c on (a.ITEM_CODE = c.ITEM_CODE )
+            left join mm_item d on (a.item_code = d.item_code)
+            WHERE ( b.SALE_PRICE >=:from_amount and b.SALE_PRICE <=:to_amount) AND  (a.ITEM_CODE LIKE '2000%') AND (c.CONSIGNMENT_ITEM_YN = 'N') 
+            GROUP BY a.ITEM_CODE, a.ITEM_DESC,a.STORE_CODE,d.last_receipt_date,d.material_group_code
+            ORDER BY d.material_group_code,a.ITEM_DESC   ASC
+
+            
+            """
+
+            self.cursor.execute(stock_amount_wise_qurey, [from_amount, to_amount])
+
+        else:
+            stock_amount_wise_qurey = f"""
+        
+            SELECT a.ITEM_CODE "Item Code", a.ITEM_DESC "Description",a.STORE_CODE "Store Code",
+            SUM(a.QTY_ON_HAND)"Qty On Hand",sum(a.AVAIL_QTY) "Avail.Stock",
+            sum(a.QTY_ON_HAND-a.AVAIL_QTY) "In Transit Stock",d.last_receipt_date "Last Inward",
+            case 
+            when (d.material_group_code = 'KDHMD3') then ('Pharma')
+            when (d.material_group_code<> 'KDHMD3') then ('surgical')
+            else null
+            end as "Material Category"
+            FROM IBAEHIS.ST_BATCH_SEARCH_LANG_VIEW a
+            left join ST_BATCH_CONTROL b on ( a.ITEM_CODE=b.ITEM_CODE and a.BATCH_ID=b.BATCH_ID  and a.EXPIRY_DATE=b.EXPIRY_DATE_OR_RECEIPT_DATE)
+            left join st_item c on (a.ITEM_CODE = c.ITEM_CODE )
+            left join mm_item d on (a.item_code = d.item_code)
+            WHERE ( b.SALE_PRICE >=:from_amount and b.SALE_PRICE <=:to_amount) AND  (a.STORE_CODE in (:store_code)) AND (a.ITEM_CODE LIKE '2000%') AND (c.CONSIGNMENT_ITEM_YN = 'N') 
+            GROUP BY a.ITEM_CODE, a.ITEM_DESC,a.STORE_CODE,d.last_receipt_date,d.material_group_code
+            ORDER BY d.material_group_code,a.ITEM_DESC   ASC
+
+            
+            """
+
+            self.cursor.execute(
+                stock_amount_wise_qurey, [from_amount, to_amount, store_code]
+            )
+
+        data = self.cursor.fetchall()
+
+        # only print head
+        column_name = [i[0] for i in self.cursor.description]
+
+        # column info
+        # for x in self.cursor.description:
+        #     print(x)
+
+        if self.cursor:
+            self.cursor.close()
+
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data, column_name
+
     def get_predischarge_medication(self, from_date, to_date):
 
         predischarge_medication_qurey = """
@@ -1576,16 +1671,15 @@ order by a.DOC_DATE
         get_online_consultation_report_qurey = """ 
         
        SELECT   TO_CHAR (a.service_date, 'DD/MM/YY') ser_date,TO_CHAR (a.service_date, 'HH24:MI:SS') ser_time, a.blng_serv_code serv_code, c.long_desc serv_desc,DECODE (a.episode_type,'I', 'IP','O', 'OP','E', 'Emergency','R', 'Referral','D', 'Daycare') pat_Type,
-       a.patient_id pat_id, b.short_name pat_name, a.upd_net_charge_amt amount, a.episode_id episode_id, a.blng_class_code blng_class_code, a.bed_class_code bed_class_code, a.serv_qty, a.physician_id,p.LONG_DESC
-       FROM bl_patient_charges_folio a, mp_patient_mast b,bl_blng_serv c, BL_PACKAGE_ENCOUNTER_DTLS e,bl_package p
+       a.patient_id pat_id, b.short_name pat_name, a.upd_net_charge_amt amount, a.episode_id episode_id, a.blng_class_code blng_class_code, a.bed_class_code bed_class_code, a.serv_qty,p.LONG_DESC, a.physician_id, q.PRACTITIONER_NAME
+       FROM bl_patient_charges_folio a, mp_patient_mast b,bl_blng_serv c, BL_PACKAGE_ENCOUNTER_DTLS e,bl_package p, am_practitioner q
        WHERE a.operating_facility_id = 'KH' AND a.patient_id = b.patient_id AND a.blng_serv_code = c.blng_serv_code
        and NVL(A.BILLED_FLAG,'N') = decode(a.episode_type, 'O', 'Y', 'E', 'Y', 'R', 'Y', NVL(A.BILLED_FLAG, 'N'))
        AND a.service_date between :from_date and  to_date(:to_date) + 1 
        and a.blng_serv_code in ('CNOP000029', 'CNOP000040', 'CNOP000041', 'CNOP000044')
+       and a.physician_id = q.PRACTITIONER_ID
        and a.ENCOUNTER_ID = e.ENCOUNTER_ID(+) and a.PACKAGE_SEQ_NO = e.PACKAGE_SEQ_NO(+) and a.OPERATING_FACILITY_ID = e.OPERATING_FACILITY_ID(+)
        and e.PACKAGE_CODE = p.PACKAGE_CODE(+) and e.OPERATING_FACILITY_ID = p.OPERATING_FACILITY_ID(+)
-    
-
 
 """
 
@@ -1876,6 +1970,34 @@ order by a.DOC_DATE
             self.ora_db.close()
 
         return gst_data_of_op_data, column_name
+
+    def get_item_substitution_report(self, from_date, to_date):
+        item_substitution_report_qurey = """ 
+
+        select a.PATIENT_ID, p.PATIENT_NAME  ,d.ORD_DATE_TIME Indent_Date_TIME,b.ORDER_CATALOG_CODE Indent_Item_code,
+        b.CATALOG_DESC ItemNameIndented,v1.GENERIC_NAME GenericNameIndented,b.ORDER_QTY, a.DISP_DATE_TIME,c.DISP_DRUG_CODE,u.drug_desc ItemNameDispensed,v.GENERIC_NAME GenericNameDispensed,  c.DISP_QTY
+        from ph_disp_hdr a,or_order_line b,ph_disp_dtl c,or_order d,mp_patient p,PH_DRug u,ph_generic_name v,PH_DRug u1,ph_generic_name v1
+        where a.ORDER_ID=b.ORDER_ID and b.ORDER_ID =d.order_id  and a.DISP_NO=c.DISP_NO and a.PATIENT_ID = p.PATIENT_ID
+        and  c.DISP_DRUG_CODE = u.DRUG_CODE and u.GENERIC_ID = v.GENERIC_ID
+        and b.ORDER_CATALOG_CODE = u1.DRUG_CODE and u1.GENERIC_ID = v1.GENERIC_ID
+        and b.ORDER_CATALOG_CODE <> c.DISP_DRUG_CODE
+        and d.ORD_DATE_TIME between :from_date and to_date (:to_date) + 1
+
+
+
+"""
+
+        self.cursor.execute(item_substitution_report_qurey, [from_date, to_date])
+        item_substitution_report_data = self.cursor.fetchall()
+
+        column_name = [i[0] for i in self.cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return item_substitution_report_data, column_name
 
     def get_revenue_data_of_sl(self):
 
@@ -3037,32 +3159,60 @@ D.PRIMARY_SPECIALITY_CODE = E.SPECIALITY_CODE and PREF_SURG_DATE between :from_d
         return get_trf_report_data, column_name
 
     def get_current_inpatients_clinical_admin(self, billing_group):
-
-        current_inpatients_clinical_admin_qurey = """
+        if billing_group == 'dietitian':
+            current_inpatients_clinical_admin_qurey = '''
+            
+                select a.PATIENT_ID, b.patient_name, a.ADMISSION_DATE_TIME Admission_Time, E.LONG_DESC,a.BED_NUM ,c.DIS_ADV_DATE_TIME DISCHARGE_REQUEST_TIME,
+                f.PRACTITIONER_NAME Treating_Doctor,  g.LONG_DESC Speciality,
+                c.EXPECTED_DISCHARGE_DATE ,--n.LAST_AMENDED_DATE_TIME,
+                B.Contact2_no AS Patient_no,b.Contact3_no as Relative_Phone_No,b.EMAIL_ID
+                from ip_open_encounter a, mp_patient b, ip_discharge_advice c ,
+                bl_episode_fin_dtls d, ip_bed_class e, am_practitioner f, am_speciality g, sm_appl_user h--, ca_encntr_note n
+                where a.PATIENT_ID = b.PATIENT_ID and 
+                a.ENCOUNTER_ID = c.ENCOUNTER_ID and 
+                a.ENCOUNTER_ID = d.EPISODE_ID and 
+                --n.PATIENT_ID = c.PATIENT_ID and 
+                --n.ENCOUNTER_ID = c.ENCOUNTER_ID and 
+                A.BED_CLASS_CODE = E.BED_CLASS_CODE 
+                and a.ATTEND_PRACTITIONER_ID = f.PRACTITIONER_ID 
+                AND a.SPECIALTY_CODE = g.SPECIALITY_CODE 
+                and a.FACILITY_ID = 'KH'
+                and c.CANCELLATION_DATE_TIME is null 
+                and c.added_by_id = h.appl_user_id
+                order by BILL_DOC_DATE
+'''
+            self.cursor.execute(current_inpatients_clinical_admin_qurey)
+            
+        else :
+            current_inpatients_clinical_admin_qurey = """
         
         
-            select a.PATIENT_ID, b.patient_name, a.ADMISSION_DATE_TIME Admission_Time, E.LONG_DESC,a.BED_NUM ,c.DIS_ADV_DATE_TIME DISCHARGE_REQUEST_TIME,c.EXPECTED_DISCHARGE_DATE ,n.LAST_AMENDED_DATE_TIME,
-            n.AUTHORIZED_DATE_TIME,D.BILL_DOC_DATE,d.DISCHARGE_DATE_TIME Bed_Clear_Date_Time, D.BLNG_GRP_ID,b.ALT_ID2_NO AS PR_NO ,
-            f.PRACTITIONER_NAME Treating_Doctor, g.LONG_DESC Speciality, c.ENCOUNTER_ID,c.added_by_id ,
-            h.appl_user_name ,a.NURSING_UNIT_CODE,B.Contact2_no AS Patient_no,b.Contact3_no as Relative_No
-            from ip_open_encounter a, mp_patient b, ip_discharge_advice c ,
-            bl_episode_fin_dtls d, ip_bed_class e, am_practitioner f, am_speciality g, sm_appl_user h, ca_encntr_note n
-             where a.PATIENT_ID = b.PATIENT_ID and 
-            a.ENCOUNTER_ID = c.ENCOUNTER_ID and 
-            a.ENCOUNTER_ID = d.EPISODE_ID and 
-            n.PATIENT_ID = c.PATIENT_ID and 
-            n.ENCOUNTER_ID = c.ENCOUNTER_ID and 
-            A.BED_CLASS_CODE = E.BED_CLASS_CODE 
-            and a.ATTEND_PRACTITIONER_ID = f.PRACTITIONER_ID 
-            AND a.SPECIALTY_CODE = g.SPECIALITY_CODE 
-            and a.FACILITY_ID = 'KH'
-            and c.added_by_id = h.appl_user_id
-            and d.BLNG_GRP_ID !=:billing_group
-            order by BILL_DOC_DATE
+                    select a.PATIENT_ID, b.patient_name, a.ADMISSION_DATE_TIME Admission_Time, E.LONG_DESC,a.BED_NUM ,c.DIS_ADV_DATE_TIME DISCHARGE_REQUEST_TIME,
+                    f.PRACTITIONER_NAME Treating_Doctor,  g.LONG_DESC Speciality,
+                    c.EXPECTED_DISCHARGE_DATE ,n.LAST_AMENDED_DATE_TIME,B.Contact2_no AS Patient_no,b.Contact3_no as Relative_Phone_No,b.EMAIL_ID,
+                    n.AUTHORIZED_DATE_TIME,D.BILL_DOC_DATE,d.DISCHARGE_DATE_TIME Bed_Clear_Date_Time, D.BLNG_GRP_ID,b.ALT_ID2_NO AS PR_NO ,
+                    c.ENCOUNTER_ID,c.added_by_id ,
+                    h.appl_user_name ,a.NURSING_UNIT_CODE
+                    from ip_open_encounter a, mp_patient b, ip_discharge_advice c ,
+                    bl_episode_fin_dtls d, ip_bed_class e, am_practitioner f, am_speciality g, sm_appl_user h, ca_encntr_note n
+                    where a.PATIENT_ID = b.PATIENT_ID and 
+                    a.ENCOUNTER_ID = c.ENCOUNTER_ID and 
+                    a.ENCOUNTER_ID = d.EPISODE_ID and 
+                    n.PATIENT_ID = c.PATIENT_ID and 
+                    n.ENCOUNTER_ID = c.ENCOUNTER_ID and 
+                    A.BED_CLASS_CODE = E.BED_CLASS_CODE 
+                    and a.ATTEND_PRACTITIONER_ID = f.PRACTITIONER_ID 
+                    AND a.SPECIALTY_CODE = g.SPECIALITY_CODE 
+                    and a.FACILITY_ID = 'KH'
+                    and c.added_by_id = h.appl_user_id
+                    and d.BLNG_GRP_ID !=:billing_group
+                    order by BILL_DOC_DATE
             
         """
 
-        self.cursor.execute(current_inpatients_clinical_admin_qurey, [billing_group])
+            self.cursor.execute(current_inpatients_clinical_admin_qurey, [billing_group])
+       
+       
         current_inpatients_clinical_admin = self.cursor.fetchall()
 
         column_name = [i[0] for i in self.cursor.description]
@@ -3452,7 +3602,6 @@ and a.cancel_reason_code is null  order by a.VISIT_ADM_DATE_TIME
 
         return credit_letter_report_data, column_name
 
-
     def get_corporate_discharge_report(self, facility_code, from_date, to_date):
         corporate_discharge_report_qurey = f""" 
         
@@ -3490,7 +3639,44 @@ and a.cancel_reason_code is null  order by a.VISIT_ADM_DATE_TIME
 
         return corporate_discharge_report_data, column_name
 
+    def get_corporate_discharge_report_with_customer_code(self, from_date, to_date):
+        corporate_discharge_report_with_customer_code_qurey = f""" 
+        
+        SELECT unique a.patient_id,b.PATIENT_NAME,b.REGN_DATE,get_age(b.date_of_birth,SYSDATE) Age,b.SEX Sex,a.VISIT_ADM_DATE_TIME Admission_Date,trunc(a.DISCHARGE_DATE_TIME),
+        A.ASSIGN_CARE_LOCN_CODE,
+        A.ASSIGN_BED_CLASS_CODE,E.LONG_DESC,a.ASSIGN_BED_NUM Bed_Num,c.PRACTITIONER_NAME Treating_Doctor,d.LONG_DESC Speciality,A.ASSIGN_BED_CLASS_CODE, f.BLNG_GRP_ID,f.cust_code,f.Remark,g.long_name,A.episode_id episode
+        ,h.DOC_TYPE_CODE ,h.doc_date
+        FROM pr_encounter a, mp_patient b,am_practitioner c,am_speciality d,ip_bed_class e,bl_episode_fin_dtls f,mp_country g
+        ,BL_bill_HDR h
+        WHERE a.PATIENT_ID=b.PATIENT_ID AND a.ATTEND_PRACTITIONER_ID =c.PRACTITIONER_ID
+        and  a.PATIENT_ID=f.PATIENT_ID and A.episode_id = f.episode_id
+        and g.country_code=b.nationality_code
+        AND a.patient_class = 'IP'  AND a.SPECIALTY_CODE = d.SPECIALITY_CODE
+        and A.ASSIGN_BED_CLASS_CODE = E.BED_CLASS_CODE and a.cancel_reason_code is null
+        AND h.DOC_DATE between :from_date and to_date(:to_date) +1
+        and a.FACILITY_ID = 'KH'
+        and h.DOC_TYPE_CODE = 'IPBL'
+        and h.GROSS_AMT > 0
+        and A.episode_id = h.episode_id
+        and h.BILL_STATUS is null
+        ORDER BY A.episode_id
+        
+      
+"""
 
+        self.cursor.execute(
+            corporate_discharge_report_with_customer_code_qurey, [from_date, to_date]
+        )
+        corporate_discharge_report_with_customer_code_data = self.cursor.fetchall()
+
+        column_name = [i[0] for i in self.cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return corporate_discharge_report_with_customer_code_data, column_name
 
     def get_corporate_ip_report(self, from_date, to_date):
         corporate_ip_report_qurey = """ 
@@ -3522,14 +3708,15 @@ order by a.VISIT_ADM_DATE_TIME
     def get_opd_consultation_report(self, facility_code, from_date, to_date):
         opd_consultation_report_qurey = f""" 
         
-SELECT a.patient_id,b.patient_name,TO_CHAR (a.service_date, 'DD/MM/YY') serv_date,a.blng_serv_code serv_code,
-c.long_desc serv_desc,a.Serv_qty,a.upd_net_charge_amt,a.EPISODE_TYPE,a.service_date,physician_id
-FROM bl_patient_charges_folio a,mp_patient b,bl_blng_serv c,bl_blng_serv_grp d,am_dept_lang_vw e 
-WHERE a.operating_facility_id in ({facility_code})
-AND a.blng_serv_code = c.blng_serv_code AND a.patient_id = b.patient_id AND c.serv_grp_code = d.serv_grp_code
-AND a.acct_dept_code = e.dept_code and NVL(A.BILLED_FLAG,'N') = decode(a.episode_type,'O','Y','E','Y','R','Y',NVL(A.BILLED_FLAG,'N'))
-AND e.language_id = 'en' AND a.service_date >= TO_DATE (:from_date) AND a.service_date < TO_DATE (:to_date)+1
-and A.UPD_NET_CHARGE_AMT !=0 and a.blng_serv_code like ('CNOP%')
+        SELECT a.patient_id,b.patient_name,TO_CHAR (a.service_date, 'DD/MM/YY') serv_date,a.blng_serv_code serv_code,
+        c.long_desc serv_desc,a.Serv_qty,a.upd_net_charge_amt,a.EPISODE_TYPE,a.service_date,physician_id,f.PRACTITIONER_NAME
+        FROM bl_patient_charges_folio a,mp_patient b,bl_blng_serv c,bl_blng_serv_grp d,am_dept_lang_vw e,AM_PRACTITIONER f
+        WHERE a.operating_facility_id in ({facility_code})
+        AND a.blng_serv_code = c.blng_serv_code AND a.patient_id = b.patient_id AND c.serv_grp_code = d.serv_grp_code
+        AND a.acct_dept_code = e.dept_code and NVL(A.BILLED_FLAG,'N') = decode(a.episode_type,'O','Y','E','Y','R','Y',NVL(A.BILLED_FLAG,'N'))
+        AND e.language_id = 'en' AND a.service_date >= TO_DATE (:from_date) AND a.service_date < TO_DATE (:to_date)+1
+        and physician_id = f.PRACTITIONER_ID
+        and A.UPD_NET_CHARGE_AMT !=0 and a.blng_serv_code like ('CNOP%')
                             
                              
       

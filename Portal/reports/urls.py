@@ -74,6 +74,11 @@ urlpatterns = [
         name="non_billable_consumption1",
     ),
     path(
+        "item_substitution_report/",
+        views.item_substitution_report,
+        name="item_substitution_report",
+    ),
+    path(
         "pharmacy_charges_and_implant_pending_indent_report/",
         views.pharmacy_charges_and_implant_pending_indent_report,
         name="pharmacy_charges_and_implant_pending_indent_report",
@@ -177,6 +182,11 @@ urlpatterns = [
         name="tvd_cabg_request",
     ),
     path(
+        "stock_amount_wise/",
+        views.stock_amount_wise,
+        name="stock_amount_wise",
+    ),
+    path(
         "predischarge_medication/",
         views.predischarge_medication,
         name="predischarge_medication",
@@ -243,6 +253,11 @@ urlpatterns = [
     ),
     path("gst_data_of_ip/", views.gst_data_of_ip, name="gst_data_of_ip"),
     path("gst_data_of_op/", views.gst_data_of_op, name="gst_data_of_op"),
+    path(
+        "item_substitution_report/",
+        views.item_substitution_report,
+        name="item_substitution_report",
+    ),
     path("revenue_data_of_sl/", views.revenue_data_of_sl, name="revenue_data_of_sl"),
     path("revenue_data_of_sl1/", views.revenue_data_of_sl1, name="revenue_data_of_sl1"),
     path("revenue_data_of_sl2/", views.revenue_data_of_sl2, name="revenue_data_of_sl2"),
@@ -406,6 +421,11 @@ urlpatterns = [
         "corporate_discharge_report/",
         views.corporate_discharge_report,
         name="corporate_discharge_report",
+    ),
+    path(
+        "corporate_discharge_report_with_customer_code/",
+        views.corporate_discharge_report_with_customer_code,
+        name="corporate_discharge_report_with_customer_code",
     ),
     path(
         "credit_letter_report/", views.credit_letter_report, name="credit_letter_report"

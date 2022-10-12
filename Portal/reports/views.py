@@ -221,6 +221,9 @@ def base(request):
     non_billable_consumption1_permission = request.user.groups.filter(
         name="Pharmacy - Non Billable Consumption 1"
     )
+    item_substitution_report_permission = request.user.groups.filter(
+        name="Pharmacy - Item Substitution Report"
+    )
     pharmacy_charges_and_implant_pending_indent_report_permission = (
         request.user.groups.filter(
             name="Pharmacy - Pharmacy Charges & Implant Pending Indent Report"
@@ -292,6 +295,9 @@ def base(request):
     tvd_cabg_request_permission = request.user.groups.filter(
         name="Pharmacy - TVD CABG Request"
     )
+    stock_amount_wise_permission = request.user.groups.filter(
+        name="Pharmacy - Stock Amount-Wise"
+    )
     predischarge_medication_permission = request.user.groups.filter(
         name="Pharmacy - Predischarge Medication"
     )
@@ -344,6 +350,7 @@ def base(request):
     gst_data_of_op_permission = request.user.groups.filter(
         name="Finance - GST Data of OP"
     )
+
     revenue_data_of_sl_permission = request.user.groups.filter(
         name="Finance - Revenue Data of SL"
     )
@@ -511,6 +518,9 @@ def base(request):
     corporate_discharge_report_permission = request.user.groups.filter(
         name="Marketing - Corporate Discharge Report"
     )
+    corporate_discharge_report_with_customer_code_permission = request.user.groups.filter(
+        name="Marketing - Corporate Discharge Report With Customer Code"
+    )
     credit_letter_report_permission = request.user.groups.filter(
         name="Marketing - Credit Letter Report"
     )
@@ -621,6 +631,7 @@ def base(request):
             "intransites_confirm_pending_permission": intransites_confirm_pending_permission,
             "non_billable_consumption_permission": non_billable_consumption_permission,
             "non_billable_consumption1_permission": non_billable_consumption1_permission,
+            "item_substitution_report_permission": item_substitution_report_permission,
             "pharmacy_charges_and_implant_pending_indent_report_permission": pharmacy_charges_and_implant_pending_indent_report_permission,
             "pharmacy_direct_returns_sale_report_permission": pharmacy_direct_returns_sale_report_permission,
             "current_inpatients_report_permission": current_inpatients_report_permission,
@@ -645,6 +656,7 @@ def base(request):
             "sale_consumption_report1_permission": sale_consumption_report1_permission,
             "new_code_creation_permission": new_code_creation_permission,
             "tvd_cabg_request_permission": tvd_cabg_request_permission,
+            "stock_amount_wise_permission": stock_amount_wise_permission,
             "predischarge_medication_permission": predischarge_medication_permission,
             "predischarge_initiate_permission": predischarge_initiate_permission,
             "intransites_unf_sal_ret_permission": intransites_unf_sal_ret_permission,
@@ -709,7 +721,8 @@ def base(request):
             "marketing_permission": marketing_permission,
             "contract_effective_date_report_permission": contract_effective_date_report_permission,
             "patient_discharge_report_permission": patient_discharge_report_permission,
-            "corporate_discharge_report_permission":corporate_discharge_report_permission,
+            "corporate_discharge_report_permission": corporate_discharge_report_permission,
+            "corporate_discharge_report_with_customer_code_permission":corporate_discharge_report_with_customer_code_permission,
             "admission_report_permission": admission_report_permission,
             "credit_letter_report_permission": credit_letter_report_permission,
             "corporate_ip_report_permission": corporate_ip_report_permission,
@@ -1501,6 +1514,44 @@ def non_billable_consumption1(request):
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
             # return render(request,'reports/non_billable_consumption1.html', {'non_billable_consumption1_data':non_billable_consumption1_data, "non_billable_consumption1_column_name":non_billable_consumption1_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Non Billable Consumption 1"})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Item Substitution Report")
+def item_substitution_report(request):
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Item Substitution Report",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/item_substitution_report.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        item_substitution_report_value, column_name = db.get_item_substitution_report(
+            from_date, to_date
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=item_substitution_report_value,
+            column=column_name,
+        )
+
+        if not item_substitution_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/item_substitution_report.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/item_substitution_report.html', {'item_substitution_report_value':item_substitution_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2583,6 +2634,50 @@ def tvd_cabg_request(request):
 
 
 @login_required(login_url="login")
+@allowed_users("Pharmacy - Stock Amount-Wise")
+def stock_amount_wise(request):
+    db= Ora()
+    store_data = db.get_stock_amount_wise_store_code()
+    
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Stock Amount-Wise",
+        "date_form": DateForm(),
+        "store_data":store_data,
+    }
+    if request.method == "GET":
+        return render(request, "reports/stock_amount_wise.html", context)
+
+    elif request.method == "POST":
+
+        from_amount = request.POST["from_amount"]
+        to_amount = request.POST["to_amount"]
+        store_code = request.POST["store_code"]
+
+        db = Ora()
+        (
+            stock_amount_wise_data,
+            stock_amount_wise_column_name,
+        ) = db.get_stock_amount_wise(from_amount,to_amount,store_code)
+
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=stock_amount_wise_data,
+            column=stock_amount_wise_column_name,
+        )
+
+        if not stock_amount_wise_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/stock_amount_wise.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/stock_amount_wise.html', {'stock_amount_wise_data':stock_amount_wise_data, "stock_amount_wise_column_name":stock_amount_wise_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Pharmacy - Intransites Acknowledgement Pending ISS RT"})
+
+
+@login_required(login_url="login")
 @allowed_users("Pharmacy - Predischarge Medication")
 def predischarge_medication(request):
 
@@ -3604,16 +3699,14 @@ def revenue_data_of_sl3(request):
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Pre Discharge Report")
 def pre_discharge_report(request):
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Pre Discharge Report",
+        "date_form": DateForm(),
+    }
+
     if request.method == "GET":
-        return render(
-            request,
-            "reports/pre_discharge_report.html",
-            {
-                "user_name": request.user.username,
-                "page_name": "Pre Discharge Report",
-                "date_form": DateForm(),
-            },
-        )
+        return render(request, "reports/pre_discharge_report.html", context)
 
     elif request.method == "POST":
         # Manually format To Date fro Sql Query
@@ -3631,15 +3724,8 @@ def pre_discharge_report(request):
         )
 
         if not pre_discharge_report_value:
-            return render(
-                request,
-                "reports/pre_discharge_report.html",
-                {
-                    "error": "Sorry!!! No Data Found",
-                    "user_name": request.user.username,
-                    "date_form": DateForm(),
-                },
-            )
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/pre_discharge_report.html", context)
 
         else:
             return FileResponse(
@@ -5822,9 +5908,6 @@ def patient_discharge_report(request):
             # return render(request,'reports/patient_discharge_report.html', {'patient_discharge_report_value':patient_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
 
 
-
-
-
 @login_required(login_url="login")
 @allowed_users("Marketing - Corporate Discharge Report")
 def corporate_discharge_report(request):
@@ -5858,9 +5941,10 @@ def corporate_discharge_report(request):
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
-        corporate_discharge_report_value, column_name = db.get_corporate_discharge_report(
-            facility_code, from_date, to_date
-        )
+        (
+            corporate_discharge_report_value,
+            column_name,
+        ) = db.get_corporate_discharge_report(facility_code, from_date, to_date)
 
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -5878,7 +5962,45 @@ def corporate_discharge_report(request):
             )
             # return render(request,'reports/corporate_discharge_report.html', {'corporate_discharge_report_value':corporate_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
 
+@login_required(login_url="login")
+@allowed_users("Marketing - Corporate Discharge Report With Customer Code")
+def corporate_discharge_report_with_customer_code(request):
+    
+    context = {
+        "user_name": request.user.username,
+        "page_name": "Corporate Discharge Report With Customer Code",
+        "date_form": DateForm()
+    }
+    if request.method == "GET":
+        return render(request, "reports/corporate_discharge_report_with_customer_code.html", context)
 
+    elif request.method == "POST":
+        
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        (
+            corporate_discharge_report_with_customer_code_value,
+            column_name,
+        ) = db.get_corporate_discharge_report_with_customer_code(from_date, to_date)
+
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=corporate_discharge_report_with_customer_code_value,
+            column=column_name,
+        )
+
+        if not corporate_discharge_report_with_customer_code_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/corporate_discharge_report_with_customer_code.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/corporate_discharge_report_with_customer_code.html', {'corporate_discharge_report_with_customer_code_value':corporate_discharge_report_with_customer_code_value, 'user_name':request.user.username,'date_form' : DateForm()})
 
 
 @login_required(login_url="login")

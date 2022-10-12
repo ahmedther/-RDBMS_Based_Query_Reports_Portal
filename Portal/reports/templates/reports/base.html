@@ -150,6 +150,7 @@
                                     {% if intransites_confirm_pending_permission %} <li><a class="dropdown-item text-wrap" href={% url 'intransites_confirm_pending' %}>Intransites Confirm Pending</a>{% endif %}
                                       {% if non_billable_consumption_permission %} <li><a class="dropdown-item text-wrap" href={% url 'non_billable_consumption' %}>Non Billable Consumption</a>{% endif %}
                                         {% if non_billable_consumption1_permission %} <li><a class="dropdown-item text-wrap" href={% url 'non_billable_consumption1' %}>Non Billable Consumption 1</a>{% endif %}
+                                          {% if item_substitution_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'item_substitution_report' %}>Item Substitution Report</a>{% endif %}
 								</ul>
 							</div>  <!-- col-megamenu.// -->
 						</div><!-- end col-3 -->
@@ -187,6 +188,7 @@
                                     {% if sale_consumption_report1_permission %}<li><a class="dropdown-item text-wrap" href={% url 'sale_consumption_report1' %}>Sale Consumption Report 1</a>{% endif %}
                                       {% if new_code_creation_permission %}<li><a class="dropdown-item text-wrap" href={% url 'new_code_creation' %}>New Code Creation</a>{% endif %}
                                         {% if tvd_cabg_request_permission %}<li><a class="dropdown-item text-wrap" href={% url 'tvd_cabg_request' %}>TVD CABG Request</a>{% endif %}
+                                          {% if stock_amount_wise_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_amount_wise' %}>Stock Amount-Wise</a>{% endif %}
                                   
 								</ul>
 							</div>  <!-- col-megamenu.// -->
@@ -233,6 +235,7 @@
                     {% if gst_data_of_pharmacy_return_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gst_data_of_pharmacy_return' %}>GST Data of Pharmacy Return</a>{% endif %}
                       {% if gst_data_of_ip_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gst_data_of_ip' %}>GST Data of IP</a>{% endif %}
                         {% if gst_data_of_op_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gst_data_of_op' %}>GST Data of OP</a>{% endif %}
+                          
                     </ul>
                 </div>  <!-- col-megamenu.// -->
               </div>    
@@ -346,6 +349,7 @@
                   {% if admission_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admission_report' %}>Admission Reports</a>{% endif %}
                     {% if patient_discharge_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patient_discharge_report' %}>Patient Discharge Report</a>{% endif %}
                       {% if corporate_discharge_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'corporate_discharge_report' %}>Corporate Discharge Report</a>{% endif %}
+                        {% if corporate_discharge_report_with_customer_code_permission %}<li><a class="dropdown-item text-wrap" href={% url 'corporate_discharge_report_with_customer_code' %}>Corporate Discharge Report With Customer Code</a>{% endif %}
             </ul>
             </div>  <!-- col-megamenu.// -->
           </div><!-- end col-3 -->
