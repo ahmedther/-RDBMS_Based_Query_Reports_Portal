@@ -1,0 +1,277 @@
+{% extends "reports/base.html" %}
+
+{% block rh_nav %}
+
+
+
+
+             
+<li class="nav-item active"> <a class="nav-link" href={% url 'rh_nav' %}>Home (Navi Mum)</a></a> </li>
+
+
+
+{% if rh_pharmacy_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Pharmacy</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if pharmacy_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_consumption_report' %}>Pharmacy Consumption Report</a>{% endif %}
+              {% if foc_grn_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'foc_grn_report' %}>FOC GRN Report</a>{% endif %}
+                {% if bin_location_op_permission %}<li><a class="dropdown-item text-wrap" href={% url 'bin_location_op' %}>Bin Location OP</a></li>{% endif %}
+                  {% if schedule_h1_drug_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'schedule_h1_drug_report' %}>Schedule H1 Drug Report</a>{% endif %}
+                    {% if pharmacy_indent_deliver_summary_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_indent_deliver_summary_report' %}>Pharmacy Indent Deliver Summary Report</a>{% endif %}
+                      {% if pharmacy_direct_sales_report_permission %} <li><a class="dropdown-item text-wrap" href={% url 'pharmacy_direct_sales_report' %}>Pharmacy Direct Sales Report</a>{% endif %}
+                        {% if pharmacy_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_consumption_report' %}>Pharmacy Consumption Report</a>{% endif %}
+             
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_report' %}>Stock Report</a></li>{% endif %}
+              {% if grn_data_permission %}<li><a class="dropdown-item text-wrap" href={% url 'grn_data' %}>GRN Data</a>{% endif %}
+                {% if pharmacy_op_returns_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_op_returns' %}>Pharmacy OP Returns</a>{% endif %}
+                  {% if restricted_antimicrobials_consumption_report_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'restricted_antimicrobials_consumption_report' %}>Restricted Antimicrobials Consumption Report</a>{% endif %}
+                    {% if intransites_stk_tfr_acknowledgement_pending_permission %}<li><a class="dropdown-item text-wrap" href={% url 'intransites_stk_tfr_acknowledgement_pending' %}>Intransites Stk Tfr Acknowledgement Pending Report</a>{% endif %}
+                      {% if batchwise_stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'batchwise_stock_report' %}>Batch Wise Stock Report</a>{% endif %}
+                
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if stock_value_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_value' %}>Stock Value</a>{% endif %}
+              {% if itemwise_storewise_stock_permission %}<li><a class="dropdown-item text-wrap" href={% url 'itemwise_storewise_stock' %}>Itemwise Storewise Stock Value</a>{% endif %}
+                {% if non_billable_consumption_permission %} <li><a class="dropdown-item text-wrap" href={% url 'non_billable_consumption' %}>Non Billable Consumption</a>{% endif %}
+                  {% if item_substitution_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'item_substitution_report' %}>Item Substitution Report</a>{% endif %}
+                    {% if current_inpatients_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'current_inpatients_report' %}>Current Inpatients Reports</a>{% endif %}
+                      {% if pharmacy_itemwise_sale_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_itemwise_sale_report' %}>Pharmacy Itemwise Sale Report</a>{% endif %}
+    
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if pharmacy_op_sale_report_userwise_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_op_sale_report_userwise' %}>Pharmacy OP Sale Report Userwise</a>{% endif %}
+              {% if pharmacy_charges_and_implant_pending_indent_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_charges_and_implant_pending_indent_report' %}>Pharmacy Charges & Implant Pending Indent Report</a>{% endif %}
+                {% if consigned_item_detail_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'consigned_item_detail_report' %}>Consigned Item Detail Report</a>{% endif %}
+                  {% if intransite_stock_permission %}<li><a class="dropdown-item text-wrap" href={% url 'intransite_stock' %}>Intransite Stock</a>{% endif %}
+                    {% if pharmacy_ward_return_requests_with_status_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_ward_return_requests_with_status_report' %}>Pharmacy Ward Return Requests with Status Report</a>{% endif %}
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Pharmacy If.// -->
+
+
+
+
+
+
+{% if rh_finance_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Finance</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if package_with_price_permission %} <li><a class="dropdown-item text-wrap" href={% url 'package_with_price' %}>Package With Price</a></li> {% endif %}
+              {% if card_report_permission %} <li><a class="dropdown-item text-wrap" href={% url 'card_report' %}>Card Report</a></li> {% endif %}
+                {% if doctor_fee_package_permission %} <li><a class="dropdown-item text-wrap" href={% url 'doctor_fee_package' %}>Doctor Fee Package</a></li> {% endif %}
+                  {% if op_pharmacy_gst_permission %} <li><a class="dropdown-item text-wrap" href={% url 'op_pharmacy_gst' %}>OP Pharmacy GST</a></li> {% endif %}
+                    {% if vaccine_report_permission %} <li><a class="dropdown-item text-wrap" href={% url 'vaccine_report' %}>Vaccine Report</a></li> {% endif %}
+
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+              {% if pharmacy_report_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'pharmacy_report' %}>Pharmacy Report</a>{% endif %}
+                {% if discharge_census_revised_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'discharge_census_revised' %}>Discharge Census Revised</a>{% endif %}
+                  {% if health_checkup_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'health_checkup' %}>Health Checkup</a>{% endif %}
+                    {% if packages_applied_to_patients_permission %}<li><a class="dropdown-item text-wrap" href={% url 'packages_applied_to_patients' %}>Packages Applied To Patients</a>{% endif %}
+                        {% if collection_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'collection_report' %}>Collection Report</a>{% endif %}
+                
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Admissions With Address</a>{% endif %}
+              {% if admissions_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_report' %}>Admissions Report</a>{% endif %}
+                {% if admissions_referal_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_referal' %}>Admissions Referal</a>{% endif %}
+                  {% if refund_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'refund_report' %}>Refund Report</a>{% endif %}
+                    {% if packages_applied_to_patients_permission %}<li><a class="dropdown-item text-wrap" href={% url 'packages_applied_to_patients' %}>Packages Applied To Patients</a>{% endif %}
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if cathlab_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cathlab_report' %}>Cathlab Report</a>{% endif %}
+              {% if daily_revenue_reports_permission %}<li><a class="dropdown-item text-wrap" href={% url 'daily_revenue_reports' %}>Daily Revenue Reports</a>{% endif %}
+                {% if patientwise_bill_details_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patientwise_bill_details' %}>Patient-Wise Bill Details</a>{% endif %}
+                  {% if surgery_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'surgery_report' %}>Surgery Report</a>{% endif %}
+
+                  
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Finance If.// -->
+
+
+{% if rh_clinical_administration_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Clinical Administration</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if admission_report_for_nursing_permission %} <li><a class="dropdown-item text-wrap" href={% url 'admission_report_for_nursing' %}>Admission Report for Nursing</a></li> {% endif %}
+             
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if rh_discharge_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_discharge_report_2' %}>Discharge Report 2</a></li> {% endif %}
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Reserved</a>{% endif %}
+    
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if cathlab_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cathlab_report' %}>Reserved</a>{% endif %}
+    
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+
+
+
+
+
+{% if rh_marketing_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Marketing</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if rh_admission_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_admission_report_2' %}>Admission Report 2</a></li> {% endif %}
+             
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if rh_discharge_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_discharge_report_2' %}>Discharge Report 2</a></li> {% endif %}
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Reserved</a>{% endif %}
+    
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if cathlab_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cathlab_report' %}>Reserved</a>{% endif %}
+    
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Marketing If.// -->
+
+
+{% endblock %}
+
+
+
+

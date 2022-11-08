@@ -1,0 +1,198 @@
+{% extends "reports/base.html" %}
+
+{% block content %}
+{% load static %}
+{% comment %} No Additionals only buttons {% endcomment %}
+<link rel="stylesheet" href={% static 'reports/one_for_all.css' %}>
+
+<form method='POST'>
+    {% csrf_token %}
+
+    {% if date_template %}
+    <div class="d-flex justify-content-center">
+        <div class="btnhold">
+            <h2>
+                <div class="badge bg-primary text-wrap" style="width: 275px; margin-right: 40px; margin-bottom: 10px">
+                    From Date {{ date_form.from_date }}
+                </div>
+                <div class="badge bg-dark text-wrap" style="width: 275px">
+                    To Date {{ date_form.to_date }}
+                </div>
+            </h2>
+        </div>
+    </div>
+    {% endif %}
+
+
+    {% if time_template %}
+    <div class="d-flex justify-content-center">
+        <div class="input-group mb-3" style='width:600px'>
+            <input type="time" name='from_time'class="form-control btn-outline-secondary" style='width:100px;margin-right: 50px;margin-bottom: 1px;'  placeholder="Please Enter From Time" aria-label="Example text with button addon" aria-describedby="button-addon1" value = '00:00'>
+            <input type="time" name='to_time'class="form-control btn-outline-secondary" style='width:100px'  placeholder="Please Enter To Time" aria-label="Example text with button addon" aria-describedby="button-addon1"  value = '23:59'>
+        </div>
+    </div>
+    {% endif %}
+
+
+    
+
+
+    {% if input_tags %}
+    {% for input in input_tags %}
+
+    <div class="d-flex justify-content-center">
+        <div class="input-group mb-3" style="width: 600px">
+          <button
+            class="btn btn-primary btn-lg mr-5"
+            style="width: 275px"
+            type="button">
+            {{ input }}
+          </button>
+          <input
+            type="text"
+            name={{ input }}
+            class="form-control btn-outline-secondary"
+            style="width: 100px"
+            placeholder="Please Enter The {{ input }}"
+            aria-label="Example text with button addon"
+            aria-describedby="button-addon1"
+          />
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+
+
+    {% if textbox %}
+    <div class="d-flex justify-content-center">
+        <div class='btnhold'>
+            {% for text_field in textbox %}
+            <label style="margin:10px;"for="form7"><h3><span>{{ text_field }}</span></h3></label>
+            <textarea required style ='min-width: 50vw;align-items: center; margin-bottom:20px;' name="{{ text_field }}"  class="md-textarea form-control" rows="10" id="form7"></textarea>
+            
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
+
+    {% if dropdown_options %}
+    <div class="d-flex justify-content-center">
+        <div class='btnhold' style="width: 600px;margin-bottom: 20px;">
+            <select required name="dropdown_options" class="form-select" aria-label="Department Select Options">
+                <option value="" disabled selected hidden>Please Select An Item From This List</option>
+                {% for options in dropdown_options %}
+                <option value="{{ options.option_value}}">{{ options.option_name }}</option>
+                {% endfor %}
+                
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if dropdown_options1 %}
+    <div class="d-flex justify-content-center">
+        <div class='btnhold' style="width: 600px;margin-bottom: 20px;">
+            <select required name="dropdown_options1" class="form-select" aria-label="Department Select Options">
+                <option value="" disabled selected hidden>Please Select An Item From This List</option>
+                {% for options in dropdown_options1 %}
+                <option value="{{ options.option_value}}">{{ options.option_name }}</option>
+                {% endfor %}
+                
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+
+    {% if facility_template %}
+    <div class="d-flex justify-content-center">
+        <div class='btnhold' style="width: 600px;margin-bottom: 20px;">
+            <select required name="facility_dropdown" class="form-select" aria-label="Facility Select Options">
+                <option required value="" disabled selected hidden>Please Select A Facility From This List</option>
+                {% for facility in facilities %}
+                <option value={{ facility.facility_code }}>{{ facility.facility_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <div class="d-flex justify-content-center">
+        <div class='btnhold'>
+            <button type="submit" class="btn btn-primary btn-lg mr-5" style='width:275px'>Search</button>
+
+            <button type="button" onclick="export_data()" class="btn btn-dark btn-lg"
+                style='width:275px'>Download</button>
+        </div>
+    </div>
+
+
+</form>
+
+
+
+
+{% if data_value %}
+
+<section class="ftco-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center mb-5">
+                <h2 class="heading-section">{{ page_name }}</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="table-wrap">
+                    <table class="table" id="table_id">
+                        <thead class="thead-dark">
+                            <tr>
+                                {% if data_value_column_name %}
+                                {% for column in data_value_column_name %}
+                                <th>{{ column }}</th>
+
+                                {% endfor %}
+                                {% endif %}
+                                <th>&nbsp;</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr class="alert" role="alert">
+                                {% for data in data_value %}
+                                {% for i in data %}
+                                <td>{{ i }}</td>
+                                {% endfor %}
+
+                                <td>
+                                    <a href="#" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true"><i class="fa fa-close"></i></span>
+
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+
+
+
+
+
+
+{% endif %}
+{% endblock %}
+
+{% comment %} Only Date  End{% endcomment %}

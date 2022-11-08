@@ -1,0 +1,181 @@
+{% extends "reports/base.html" %}
+
+{% block indore_nav %}
+
+
+
+
+             
+<li class="nav-item active"> <a class="nav-link" href={% url 'indore_nav' %}>Home (Indore)</a></a> </li>
+
+
+
+{% if indore_pharmacy_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Pharmacy</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if batchwise_stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'batchwise_stock_report' %}>Batch Wise Stock Report</a>{% endif %}
+
+             
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_report' %}>Reserved</a></li>{% endif %}
+    
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if stock_value_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_value' %}>Reserved</a>{% endif %}
+      
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if pharmacy_op_sale_report_userwise_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_op_sale_report_userwise' %}>Reserved</a>{% endif %}
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Pharmacy If.// -->
+
+
+
+
+
+
+{% if indore_finance_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Finance</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if collection_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'collection_report' %}>Collection Report</a>{% endif %}
+
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+              {% if indore_revenue_report_permission %}<li><a class="dropdown-item text-wrap text-wrap" href={% url 'indore_revenue_report' %}>Indore Revenue Report</a>{% endif %}
+   
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Reserved</a>{% endif %}
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if cathlab_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cathlab_report' %}>Reserved</a>{% endif %}
+
+                  
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Finance If.// -->
+
+{% if rh_marketing_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">RH Marketing</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if rh_admission_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_admission_report_2' %}>Admission Report 2</a></li> {% endif %}
+             
+           </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if rh_discharge_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_discharge_report_2' %}>Discharge Report 2</a></li> {% endif %}
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Reserved</a>{% endif %}
+    
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if cathlab_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cathlab_report' %}>Reserved</a>{% endif %}
+    
+
+
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+</li>
+{% endif %}
+
+<!-- End Marketing If.// -->
+
+
+{% endblock %}

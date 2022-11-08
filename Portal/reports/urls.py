@@ -1,11 +1,15 @@
 from django.urls import path
-from . import views
+import reports.views as views
+import reports.rh_views as rh_views
+import reports.indore_views as indore_views
 
 urlpatterns = [
     path("", views.login_page, name="login"),  # login Page
     path("landing_page/", views.landing_page, name="landing_page"),
     path("logout/", views.logoutuser, name="logoutuser"),
-    path("base/", views.base, name="base"),  # base HTml pAge
+    # path("base/", views.base, name="base"),  # base HTml pAge
+    # KH NAV
+    path("kh_nav/", views.kh_nav, name="kh_nav"),
     path("signupuser/", views.signupuser, name="signupuser"),
     path("stock/", views.stock, name="stock"),
     path("stock_report/", views.stock_report, name="stock_report"),
@@ -77,6 +81,11 @@ urlpatterns = [
         "item_substitution_report/",
         views.item_substitution_report,
         name="item_substitution_report",
+    ),
+    path(
+        "foc_grn_report/",
+        views.foc_grn_report,
+        name="foc_grn_report",
     ),
     path(
         "pharmacy_charges_and_implant_pending_indent_report/",
@@ -187,6 +196,16 @@ urlpatterns = [
         name="stock_amount_wise",
     ),
     path(
+        "dept_issue_pending_tracker/",
+        views.dept_issue_pending_tracker,
+        name="dept_issue_pending_tracker",
+    ),
+    path(
+        "patient_indent_count/",
+        views.patient_indent_count,
+        name="patient_indent_count",
+    ),
+    path(
         "predischarge_medication/",
         views.predischarge_medication,
         name="predischarge_medication",
@@ -217,6 +236,11 @@ urlpatterns = [
         name="intransites_acknowledgement_pending_iss_rt",
     ),
     path(
+        "narcotic_stock_report/",
+        views.narcotic_stock_report,
+        name="narcotic_stock_report",
+    ),
+    path(
         "credit_outstanding_bill/",
         views.credit_outstanding_bill,
         name="credit_outstanding_bill",
@@ -228,6 +252,13 @@ urlpatterns = [
         name="online_consultation_report",
     ),
     path("contract_report/", views.contract_report, name="contract_report"),
+    path("admission_census/", views.admission_census, name="admission_census"),
+    path("card/", views.card, name="card"),
+    path(
+        "patientwise_bill_details/",
+        views.patientwise_bill_details,
+        name="patientwise_bill_details",
+    ),
     path(
         "package_contract_report/",
         views.package_contract_report,
@@ -246,6 +277,13 @@ urlpatterns = [
     path(
         "gst_data_of_pharmacy/", views.gst_data_of_pharmacy, name="gst_data_of_pharmacy"
     ),
+    path("cathlab/", views.cathlab, name="cathlab"),
+    path("form_61/", views.form_61, name="form_61"),
+    path(
+        "packages_applied_to_patients/",
+        views.packages_applied_to_patients,
+        name="packages_applied_to_patients",
+    ),
     path(
         "gst_data_of_pharmacy_return/",
         views.gst_data_of_pharmacy_return,
@@ -253,6 +291,9 @@ urlpatterns = [
     ),
     path("gst_data_of_ip/", views.gst_data_of_ip, name="gst_data_of_ip"),
     path("gst_data_of_op/", views.gst_data_of_op, name="gst_data_of_op"),
+    path("ot/", views.ot, name="ot"),
+    path("discharge_census/", views.discharge_census, name="discharge_census"),
+    path("gst_ipd/", views.gst_ipd, name="gst_ipd"),
     path(
         "item_substitution_report/",
         views.item_substitution_report,
@@ -262,6 +303,8 @@ urlpatterns = [
     path("revenue_data_of_sl1/", views.revenue_data_of_sl1, name="revenue_data_of_sl1"),
     path("revenue_data_of_sl2/", views.revenue_data_of_sl2, name="revenue_data_of_sl2"),
     path("revenue_data_of_sl3/", views.revenue_data_of_sl3, name="revenue_data_of_sl3"),
+    path("revenue_jv/", views.revenue_jv, name="revenue_jv"),
+    path("collection_report/", views.collection_report, name="collection_report"),
     path(
         "pre_discharge_report/", views.pre_discharge_report, name="pre_discharge_report"
     ),
@@ -488,6 +531,11 @@ urlpatterns = [
         name="additional_tax_on_package_room_rent",
     ),
     path(
+        "due_deposit_report/",
+        views.due_deposit_report,
+        name="due_deposit_report",
+    ),
+    path(
         "ehc_operation_report/", views.ehc_operation_report, name="ehc_operation_report"
     ),
     path(
@@ -514,4 +562,146 @@ urlpatterns = [
         views.non_package_covid_patient_report,
         name="non_package_covid_patient_report",
     ),
+    # Microbiology
+    path("gx_flu_a_flu_b_rsv/", views.gx_flu_a_flu_b_rsv, name="gx_flu_a_flu_b_rsv"),
+    path(
+        "h1n1_detection_by_pcr/",
+        views.h1n1_detection_by_pcr,
+        name="h1n1_detection_by_pcr",
+    ),
+    path(
+        "biofire_respiratory/",
+        views.biofire_respiratory,
+        name="biofire_respiratory",
+    ),
+    path(
+        "covid_19_report_with_pincode_and_ward/",
+        views.covid_19_report_with_pincode_and_ward,
+        name="covid_19_report_with_pincode_and_ward",
+    ),
+    path(
+        "cbnaat_covid_report_with_pincode/",
+        views.cbnaat_covid_report_with_pincode,
+        name="cbnaat_covid_report_with_pincode",
+    ),
+    # Run Query Directly out of box
+    path(
+        "run_query_directly/",
+        views.run_query_directly,
+        name="run_query_directly",
+    ),
 ]
+
+
+# RH URLS
+rh_urlpatterns = [
+    # RH Finance Paths
+    path(
+        "rh_nav/",
+        rh_views.rh_nav,
+        name="rh_nav",
+    ),
+    path(
+        "package_with_price/",
+        rh_views.package_with_price,
+        name="package_with_price",
+    ),
+    path(
+        "card_report/",
+        rh_views.card_report,
+        name="card_report",
+    ),
+    path(
+        "doctor_fee_package/",
+        rh_views.doctor_fee_package,
+        name="doctor_fee_package",
+    ),
+    path(
+        "op_pharmacy_gst/",
+        rh_views.op_pharmacy_gst,
+        name="op_pharmacy_gst",
+    ),
+    path(
+        "vaccine_report/",
+        rh_views.vaccine_report,
+        name="vaccine_report",
+    ),
+    path(
+        "pharmacy_report/",
+        rh_views.pharmacy_report,
+        name="pharmacy_report",
+    ),
+    path(
+        "discharge_census_revised/",
+        rh_views.discharge_census_revised,
+        name="discharge_census_revised",
+    ),
+    path(
+        "health_checkup/",
+        rh_views.health_checkup,
+        name="health_checkup",
+    ),
+    path(
+        "admissions_with_address/",
+        rh_views.admissions_with_address,
+        name="admissions_with_address",
+    ),
+    path(
+        "admissions_report/",
+        rh_views.admissions_report,
+        name="admissions_report",
+    ),
+    path(
+        "admissions_referal/",
+        rh_views.admissions_referal,
+        name="admissions_referal",
+    ),
+    path(
+        "cathlab_report/",
+        rh_views.cathlab_report,
+        name="cathlab_report",
+    ),
+    path(
+        "daily_revenue_reports/",
+        rh_views.daily_revenue_reports,
+        name="daily_revenue_reports",
+    ),
+    path(
+        "surgery_report/",
+        rh_views.surgery_report,
+        name="surgery_report",
+    ),
+    # Clinical Admin
+    path(
+        "admission_report_for_nursing/",
+        rh_views.admission_report_for_nursing,
+        name="admission_report_for_nursing",
+    ),
+    # RH Marketing
+    path(
+        "rh_admission_report_2/",
+        rh_views.rh_admission_report_2,
+        name="rh_admission_report_2",
+    ),
+    path(
+        "rh_discharge_report_2/",
+        rh_views.rh_discharge_report_2,
+        name="rh_discharge_report_2",
+    ),
+]
+urlpatterns.extend(rh_urlpatterns)
+
+
+indore_urlpatterns = [
+    path(
+        "indore_nav/",
+        indore_views.indore_nav,
+        name="indore_nav",
+    ),
+    path(
+        "indore_revenue_report/",
+        indore_views.indore_revenue_report,
+        name="indore_revenue_report",
+    ),
+]
+urlpatterns.extend(indore_urlpatterns)

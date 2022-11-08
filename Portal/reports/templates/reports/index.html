@@ -39,6 +39,7 @@
 </head>
 
 <body>
+  
 
   <!-- ======= Header ======= -->
   <header id="header" class="header fixed-top">
@@ -53,7 +54,13 @@
 
     </div>
   </header><!-- End Header -->
-
+  {% if error %}
+              <div class="mx-auto" style="width: 600px;">
+              <div class="alert alert-danger text-center font-weight-bold" role="alert">
+                  {{ error }}
+              </div>
+            </div>
+            {% endif %}
   <!-- ======= Hero Section ======= -->
   <section id="hero" class="hero d-flex align-items-center">
 
@@ -64,15 +71,31 @@
           <h2 data-aos="fade-up" data-aos-delay="400">It is strictly forbidden to share any reports with any person within or outside the hospital.</h2>
           <div data-aos="fade-up" data-aos-delay="600">
             <div class="text-center text-lg-start">
-              <a href={% url 'base' %} class="btn-get-started scrollto d-inline-flex align-items-center justify-content-center align-self-center">
-                <span>I Agree</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
-                </svg>
-              </a>
+              <div class='dropdown1' data-dropdown>
+                <button class="btn-get-started scrollto d-inline-flex align-items-center justify-content-center align-self-center dropdown1-button" data-dropdown-button>
+                  <span data-dropdown-button>I Agree </span> 
+                  <svg data-dropdown-button xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                  </svg>
+                </button>
+                <div class='dropdown1-menu'>
+                  <span class ='dropdown1-menu-heading'>Proceed to</span>
+                  <a href={% url 'kh_nav' %}  class="dropdown1-link"><span class='dropdown1-link-text'>Mumbai KH</span></a>
+                  <a href={% url 'rh_nav' %} class="dropdown1-link"><span class='dropdown1-link-text'>Navi Mumbai KH</span></a>
+                  <a href={% url 'indore_nav' %} class="dropdown1-link"><span class='dropdown1-link-text'>Indore KH</span></a>
+                </div>
+                        {% comment %} <a href={% url 'rh_base' %} class="btn-get-started scrollto d-inline-flex align-items-center justify-content-center align-self-center">
+                          <span>Agree (Navi Mum)</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                          </svg>
+                        </a> {% endcomment %}
+              </div>
             </div>
           </div>
         </div>
+
+
         <div class="col-lg-6 hero-img" data-aos="zoom-out" data-aos-delay="200">
           <img src={% static 'reports/index_hero1.png' %} class="img-fluid" alt="">
         </div>

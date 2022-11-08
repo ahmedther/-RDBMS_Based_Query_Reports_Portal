@@ -19,7 +19,7 @@ body {
     left: 0;
     margin: auto;
     min-height: 100vh;
-    min-width: 100vh;
+    min-width: 100vw;
 
     /* max-width: 60rem;
         max-height: 60.875rem; */
