@@ -168,9 +168,7 @@
                                 <!-- <h6 class="title">Title Menu Two</h6> -->
                                 <ul class="list-unstyled">
                                   {% if revenue_data_of_sl_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl' %}>Revenue Data of SL</a>{% endif %}
-                                    {% if revenue_data_of_sl1_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl1' %}>Revenue Data of SL 1</a>{% endif %}
-                                      {% if revenue_data_of_sl2_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl2' %}>Revenue Data of SL 2</a>{% endif %}
-                                        {% if revenue_data_of_sl3_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl3' %}>Revenue Data of SL 3</a>{% endif %}
+                                        {% if revenue_data_of_sl_with_date_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl_with_date' %}>Revenue Data of SL With Date</a>{% endif %}
                                           {% if revenue_jv_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_jv' %}>Revenue JV</a>{% endif %}
                                             {% if collection_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'collection_report' %}>Collection Report</a>{% endif %}
 
@@ -341,7 +339,7 @@
                                     <ul class="list-unstyled">
                                       {% if ot_scheduling_list_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'ot_scheduling_list_report' %}>OT Scheduling List Report</a>{% endif %}
                                         {% if non_package_covid_patient_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'non_package_covid_patient_report' %}>Non Package Covid Patient Report</a>{% endif %}
-                                        
+                                          {% if run_query_directly_permission %}<li><a class="dropdown-item text-wrap" href={% url 'run_query_directly' %}>Run Query Directly</a>{% endif %}
 
 
 

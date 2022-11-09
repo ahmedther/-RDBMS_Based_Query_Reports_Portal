@@ -165,690 +165,11 @@ def landing_page(request):
 
 @login_required(login_url="login")
 def kh_nav(request):
-    # Pharmacy Based permissions
-    pharmacy_permission = request.user.groups.filter(name="Pharmacy")
-    stock_permission = request.user.groups.filter(name="Pharmacy - Stock")
-    stock_report_permission = request.user.groups.filter(name="Pharmacy - Stock Report")
-    stock_value_permission = request.user.groups.filter(name="Pharmacy - Stock Value")
-    bin_location_op_permission = request.user.groups.filter(
-        name="Pharmacy - Bin Location OP"
-    )
-    itemwise_storewise_stock_permission = request.user.groups.filter(
-        name="Pharmacy - Itemwise Storewise Stock Value"
-    )
-    batchwise_stock_report_permission = request.user.groups.filter(
-        name="Pharmacy - Batch Wise Stock Report"
-    )
-    pharmacy_op_returns_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy OP Returns"
-    )
-    restricted_antimicrobials_consumption_report_permission = (
-        request.user.groups.filter(
-            name="Pharmacy - Restricted Antimicrobials Consumption Report"
-        )
-    )
-    pharmacy_itemwise_sale_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Itemwise Sale Report"
-    )
-    pharmacy_indent_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Indent Report"
-    )
-    new_admission_indents_report_permission = request.user.groups.filter(
-        name="Pharmacy - New Admission's Indents Report"
-    )
-    return_medication_without_return_request_report_permission = (
-        request.user.groups.filter(
-            name="Pharmacy - Return Medication Without Return Request Report"
-        )
-    )
-    deleted_pharmacy_prescriptions_report_permission = request.user.groups.filter(
-        name="Pharmacy - Deleted Pharmacy Prescriptions Report"
-    )
-    pharmacy_direct_sales_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Direct Sales Report"
-    )
-    intransites_unf_sal_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Unf Sal"
-    )
-    intransites_confirm_pending_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Confirm Pending"
-    )
-    non_billable_consumption_permission = request.user.groups.filter(
-        name="Pharmacy - Non Billable Consumption"
-    )
-    non_billable_consumption1_permission = request.user.groups.filter(
-        name="Pharmacy - Non Billable Consumption 1"
-    )
-    item_substitution_report_permission = request.user.groups.filter(
-        name="Pharmacy - Item Substitution Report"
-    )
-    foc_grn_report_permission = request.user.groups.filter(
-        name="Pharmacy - FOC GRN Report"
-    )
-    pharmacy_charges_and_implant_pending_indent_report_permission = (
-        request.user.groups.filter(
-            name="Pharmacy - Pharmacy Charges & Implant Pending Indent Report"
-        )
-    )
-    pharmacy_direct_returns_sale_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Direct Returns Sale Report"
-    )
-    current_inpatients_report_permission = request.user.groups.filter(
-        name="Pharmacy - Current Inpatients Reports"
-    )
-    consigned_item_detail_report_permission = request.user.groups.filter(
-        name="Pharmacy - Consigned Item Detail Report"
-    )
-    schedule_h1_drug_report_permission = request.user.groups.filter(
-        name="Pharmacy - Schedule H1 Drug Report"
-    )
-    pharmacy_ward_return_requests_with_status_report_permission = (
-        request.user.groups.filter(
-            name="Pharmacy - Pharmacy Ward Return Requests with Status Report"
-        )
-    )
-    pharmacy_indent_deliver_summary_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Indent Deliver Summary Report"
-    )
-    intransites_stk_tfr_acknowledgement_pending_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Stk Tfr Acknowledgement Pending Report"
-    )
-    folley_and_central_line_permission = request.user.groups.filter(
-        name="Pharmacy - Folley and Central Line"
-    )
-    angiography_kit_permission = request.user.groups.filter(
-        name="Pharmacy - Angiography Kit"
-    )
-    search_indents_by_code_permission = request.user.groups.filter(
-        name="Pharmacy - Search Indents By Code"
-    )
-    new_admission_dispense_report_permission = request.user.groups.filter(
-        name="Pharmacy - New Admission Dispense Report"
-    )
-    pharmacy_op_sale_report_userwise_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy OP Sale Report Userwise"
-    )
-    pharmacy_consumption_report_permission = request.user.groups.filter(
-        name="Pharmacy - Pharmacy Consumption Report"
-    )
-    food_drug_interaction_report_permission = request.user.groups.filter(
-        name="Pharmacy - Food-Drug Interaction Report"
-    )
-    intransite_stock_permission = request.user.groups.filter(
-        name="Pharmacy - Intransite Stock"
-    )
-    grn_data_permission = request.user.groups.filter(name="Pharmacy - GRN Data")
-    drug_duplication_override_report_permission = request.user.groups.filter(
-        name="Pharmacy - Drug Duplication Override Report"
-    )
-    drug_interaction_override_report_permission = request.user.groups.filter(
-        name="Pharmacy - Drug Interaction Override Report"
-    )
-    sale_consumption_report_permission = request.user.groups.filter(
-        name="Pharmacy - Sale Consumption Report"
-    )
-    sale_consumption_report1_permission = request.user.groups.filter(
-        name="Pharmacy - Sale Consumption Report 1"
-    )
-    new_code_creation_permission = request.user.groups.filter(
-        name="Pharmacy - New Code Creation"
-    )
-    tvd_cabg_request_permission = request.user.groups.filter(
-        name="Pharmacy - TVD CABG Request"
-    )
-    stock_amount_wise_permission = request.user.groups.filter(
-        name="Pharmacy - Stock Amount-Wise"
-    )
-    dept_issue_pending_tracker_permission = request.user.groups.filter(
-        name="Pharmacy - Dept Issue Pending Tracker"
-    )
-    patient_indent_count_permission = request.user.groups.filter(
-        name="Pharmacy - Patient Indent Count"
-    )
-    predischarge_medication_permission = request.user.groups.filter(
-        name="Pharmacy - Predischarge Medication"
-    )
-    predischarge_initiate_permission = request.user.groups.filter(
-        name="Pharmacy - Predischarge Initiate"
-    )
-    intransites_unf_sal_ret_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Unf Sal Ret"
-    )
-    intransites_unf_stk_tfr_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Unf Stk Tfr"
-    )
-    intransites_acknowledgement_pending_iss_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Acknowledgement Pending ISS"
-    )
-    intransites_acknowledgement_pending_iss_rt_permission = request.user.groups.filter(
-        name="Pharmacy - Intransites Acknowledgement Pending ISS RT"
-    )
-    narcotic_stock_report_permission = request.user.groups.filter(
-        name="Pharmacy - Narcotic Stock Report"
-    )
-    # Finance Based Permissions
-    finance_permission = request.user.groups.filter(name="Finance")
-    credit_outstanding_bill_permission = request.user.groups.filter(
-        name="Finance - Credit Bill Outstanding"
-    )
-    tpa_letter_permission = request.user.groups.filter(name="Finance - TPA Letter")
-    online_consultation_report_permission = request.user.groups.filter(
-        name="Finance - Online Consultation Report"
-    )
-    contract_report_permission = request.user.groups.filter(
-        name="Finance - Contract Reports"
-    )
-    admission_census_permission = request.user.groups.filter(
-        name="Finance - Admission Census"
-    )
-    card_permission = request.user.groups.filter(name="Finance - Card")
-
-    patientwise_bill_details_permission = request.user.groups.filter(
-        name="Finance - Patient-Wise Bill Details"
-    )
-
-    package_contract_report_permission = request.user.groups.filter(
-        name="Finance - Package Contract Report"
-    )
-    credit_card_reconciliation_report_permission = request.user.groups.filter(
-        name="Finance - Credit Card Reconciliation Report"
-    )
-    covid_ot_surgery_details_permission = request.user.groups.filter(
-        name="Finance - Covid OT Surgery Details"
-    )
-    gst_data_of_pharmacy_permission = request.user.groups.filter(
-        name="Finance - GST Data of Pharmacy"
-    )
-    cathlab_permission = request.user.groups.filter(name="Finance - Cathlab")
-    form_61_permission = request.user.groups.filter(name="Finance - Form 61")
-    packages_applied_to_patients_permission = request.user.groups.filter(
-        name="Finance - Packages Applied To Patients"
-    )
-    gst_data_of_pharmacy_return_permission = request.user.groups.filter(
-        name="Finance - GST Data of Pharmacy Return"
-    )
-    gst_data_of_ip_permission = request.user.groups.filter(
-        name="Finance - GST Data of IP"
-    )
-    gst_data_of_op_permission = request.user.groups.filter(
-        name="Finance - GST Data of OP"
-    )
-    ot_permission = request.user.groups.filter(name="Finance - OT")
-
-    discharge_census_permission = request.user.groups.filter(
-        name="Finance - Discharge Census"
-    )
-    gst_ipd_permission = request.user.groups.filter(name="Finance - GST IPD")
-
-    revenue_data_of_sl_permission = request.user.groups.filter(
-        name="Finance - Revenue Data of SL"
-    )
-    revenue_data_of_sl1_permission = request.user.groups.filter(
-        name="Finance - Revenue Data of SL 1"
-    )
-    revenue_data_of_sl2_permission = request.user.groups.filter(
-        name="Finance - Revenue Data of SL 2"
-    )
-    revenue_data_of_sl3_permission = request.user.groups.filter(
-        name="Finance - Revenue Data of SL 3"
-    )
-    revenue_jv_permission = request.user.groups.filter(name="Finance - Revenue JV")
-    collection_report_permission = request.user.groups.filter(
-        name="Finance - Collection Report"
-    )
-
-    # Clinical Administration Based Permissions
-    clinical_administration_permission = request.user.groups.filter(
-        name="Clinical Administration"
-    )
-    discharge_report_2_permission = request.user.groups.filter(
-        name="Clinical Administration - Discharge Report 2"
-    )
-    pre_discharge_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Pre Discharge Report"
-    )
-    pre_discharge_report_2_permission = request.user.groups.filter(
-        name="Clinical Administration - Pre Discharge Report 2"
-    )
-    discharge_with_mis_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Discharge With MIS Report"
-    )
-    needle_prick_injury_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Needle Prick Injury Report"
-    )
-    practo_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Practo Report"
-    )
-    unbilled_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Unbilled Report"
-    )
-    unbilled_deposit_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Unbilled Deposit Report"
-    )
-    contact_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Contact Report"
-    )
-    employees_antibodies_reactive_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Employees Antibodies Reactive Report"
-    )
-    employees_reactive_and_non_pcr_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Employee Reactive and Non PCR Report"
-    )
-    employee_covid_test_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Employee Covid Test Report"
-    )
-    bed_location_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Bed Location Report"
-    )
-    home_visit_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Home Visit Report"
-    )
-    cco_billing_count_report_permission = request.user.groups.filter(
-        name="Clinical Administration - CCO Billing Count Report"
-    )
-    total_number_of_online_consultation_by_doctors_permission = request.user.groups.filter(
-        name="Clinical Administration - Total Number of Online Consultation by Doctors"
-    )
-    tpa_current_inpatients_permission = request.user.groups.filter(
-        name="Clinical Administration - TPA Current Inpatients"
-    )
-    tpa_cover_letter_permission = request.user.groups.filter(
-        name="Clinical Administration - TPA Cover Letter"
-    )
-    total_number_of_ip_patients_by_doctors_permission = request.user.groups.filter(
-        name="Clinical Administration - Total Number of IP Patients by Doctors"
-    )
-    total_number_of_op_patients_by_doctors_permission = request.user.groups.filter(
-        name="Clinical Administration - Total Number of OP Patients by Doctors"
-    )
-    opd_changes_report_permission = request.user.groups.filter(
-        name="Clinical Administration - OPD Changes Report"
-    )
-    ehc_conversion_report_permission = request.user.groups.filter(
-        name="Clinical Administration - EHC Conversion Report"
-    )
-    ehc_package_range_report_permission = request.user.groups.filter(
-        name="Clinical Administration - EHC Package Range Report"
-    )
-    error_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Error Report"
-    )
-    ot_query_report_permission = request.user.groups.filter(
-        name="Clinical Administration - OT Query Report"
-    )
-    outreach_cancer_hospital_permission = request.user.groups.filter(
-        name="Clinical Administration - Outreach Cancer Hospital"
-    )
-    gipsa_report_permission = request.user.groups.filter(
-        name="Clinical Administration - GIPSA Report"
-    )
-    precision_patient_opd_and_online_consultation_list_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Precision Patient OPD & Online Consultation List Report"
-    )
-    appointment_details_by_call_center_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Appointment Details By Call Center Report"
-    )
-    trf_report_permission = request.user.groups.filter(
-        name="Clinical Administration - TRF Report"
-    )
-    current_inpatients_clinical_admin_permission = request.user.groups.filter(
-        name="Clinical Administration - Current Inpatients(Clinical Admin)"
-    )
-    check_patient_registration_date_permission = request.user.groups.filter(
-        name="Clinical Administration - Check Patient Registration Date"
-    )
-    opd_consultation_report_with_address_permission = request.user.groups.filter(
-        name="Clinical Administration - OPD Consultation Report With Address"
-    )
-
-    current_inpatients_employee_and_dependants_permission = request.user.groups.filter(
-        name="Clinical Administration - Current Inpatients Employee and Dependants"
-    )
-    treatment_sheet_data_permission = request.user.groups.filter(
-        name="Clinical Administration - Treatment Sheet Data"
-    )
-    patient_registration_report_permission = request.user.groups.filter(
-        name="Clinical Administration - Patient Registration Report"
-    )
-
-    # Lab Baed Permissions
-    lab_permission = request.user.groups.filter(name="Lab")
-    covid_pcr_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Covid PCR"
-    )
-    covid_2_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Covid 2"
-    )
-    covid_antibodies_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Covid Antibodies"
-    )
-    covid_antigen_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Covid Antibodies"
-    )
-    cbnaat_test_data_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - CBNAAT Test Data"
-    )
-    lab_tat_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - LAB TAT Report"
-    )
-    histopath_fixation_data_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Histopath Fixation Data"
-    )
-    slide_label_data_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Lab - Slide Label Data"
-    )
-
-    # Marketing Based Permissions
-    marketing_permission = request.user.groups.filter(name="Marketing")
-    contract_effective_date_report_permission = request.user.groups.filter(
-        name="Marketing - Contract Effective Date Report"
-    )
-    admission_report_permission = request.user.groups.filter(
-        name="Marketing - Admission Reports"
-    )
-    patient_discharge_report_permission = request.user.groups.filter(
-        name="Marketing - Patient Discharge Report"
-    )
-    corporate_discharge_report_permission = request.user.groups.filter(
-        name="Marketing - Corporate Discharge Report"
-    )
-    corporate_discharge_report_with_customer_code_permission = (
-        request.user.groups.filter(
-            name="Marketing - Corporate Discharge Report With Customer Code"
-        )
-    )
-    credit_letter_report_permission = request.user.groups.filter(
-        name="Marketing - Credit Letter Report"
-    )
-    corporate_ip_report_permission = request.user.groups.filter(
-        name="Marketing - Corporate IP Report"
-    )
-    opd_consultation_report_permission = request.user.groups.filter(
-        name="Marketing - OPD Consultation Report"
-    )
-    emergency_casualty_report_permission = request.user.groups.filter(
-        name="Marketing - Emergency Casualty Report"
-    )
-    new_registration_report_permission = request.user.groups.filter(
-        name="Marketing - New Registration Report"
-    )
-    hospital_tariff_report_permission = request.user.groups.filter(
-        name="Marketing - Hospital Tariff Report"
-    )
-    international_patient_report_permission = request.user.groups.filter(
-        name="Marketing - International Patient Report"
-    )
-    tpa_query_permission = request.user.groups.filter(name="Marketing - TPA Query")
-    new_admission_report_permission = request.user.groups.filter(
-        name="Marketing - New Admission Report"
-    )
-
-    # Miscellaneous_Reports
-    miscellaneous_reports_permission = request.user.groups.filter(
-        name="Miscellaneous Reports"
-    )
-    ot_scheduling_list_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - OT Scheduling List Report"
-    )
-    non_package_covid_patient_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Non Package Covid Patient Report"
-    )
-    # Microbiology
-    microbiology_permission = request.user.groups.filter(name="Microbiology")
-    gx_flu_a_flu_b_rsv_permission = request.user.groups.filter(
-        name="Microbiology - GX Flu A, Flu B RSV"
-    )
-    h1n1_detection_by_pcr_permission = request.user.groups.filter(
-        name="Microbiology - H1N1 Detection By PCR"
-    )
-    biofire_respiratory_permission = request.user.groups.filter(
-        name="Microbiology - Biofire Respiratory"
-    )
-    covid_19_report_with_pincode_and_ward_permission = request.user.groups.filter(
-        name="Microbiology - COVID 19 Report With Pincode And Ward"
-    )
-    cbnaat_covid_report_with_pincode_permission = request.user.groups.filter(
-        name="Microbiology - CBNAAT COVID Report With Pincode"
-    )
-
-    # Billing
-    billing_permission = request.user.groups.filter(name="Billing")
-    discharge_billing_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Discharge Billing Report"
-    )
-    discharge_billing_report_without_date_range_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Discharge Billing Report Without Date Range"
-    )
-    discharge_billing_user_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Discharge Billing User"
-    )
-    discount_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Discount Report"
-    )
-    refund_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Refund Report"
-    )
-    non_medical_equipment_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Non Medical Equipment Report"
-    )
-    additional_tax_on_package_room_rent_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Additional Tax On Package Room Rent"
-    )
-    due_deposit_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Billing - Due Deposit Report"
-    )
-    # EHC
-    ehc_permission = request.user.groups.filter(name="EHC")
-    ehc_operation_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - EHC - EHC Operation Report"
-    )
-    ehc_operation_report_2_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - EHC - EHC Operation Report 2"
-    )
-    # Sales
-    sales_permission = request.user.groups.filter(name="Sales")
-    oncology_drugs_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Sales - Oncology Drugs Report"
-    )
-    # Radiology
-    radiology_permission = request.user.groups.filter(name="Radiology")
-    radiology_tat_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Radiology - Radiology TAT Report"
-    )
-    # Internal Auditor
-    internal_auditor_permission = request.user.groups.filter(name="Internal Auditor")
-    day_care_report_permission = request.user.groups.filter(
-        name="Miscellaneous Reports - Internal Auditor - Day Care Report"
-    )
-    context = {
-        # Facility Identifier
-        #
-        # User Det
-        "user_name": request.user.username,
-        # Pharmacy Permission Dictionary
-        "pharmacy_permission": pharmacy_permission,
-        "stock_permission": stock_permission,
-        "stock_report_permission": stock_report_permission,
-        "stock_value_permission": stock_value_permission,
-        "bin_location_op_permission": bin_location_op_permission,
-        "itemwise_storewise_stock_permission": itemwise_storewise_stock_permission,
-        "batchwise_stock_report_permission": batchwise_stock_report_permission,
-        "pharmacy_op_returns_permission": pharmacy_op_returns_permission,
-        "restricted_antimicrobials_consumption_report_permission": restricted_antimicrobials_consumption_report_permission,
-        "pharmacy_itemwise_sale_report_permission": pharmacy_itemwise_sale_report_permission,
-        "pharmacy_indent_report_permission": pharmacy_indent_report_permission,
-        "new_admission_indents_report_permission": new_admission_indents_report_permission,
-        "return_medication_without_return_request_report_permission": return_medication_without_return_request_report_permission,
-        "deleted_pharmacy_prescriptions_report_permission": deleted_pharmacy_prescriptions_report_permission,
-        "pharmacy_direct_sales_report_permission": pharmacy_direct_sales_report_permission,
-        "intransites_unf_sal_permission": intransites_unf_sal_permission,
-        "intransites_confirm_pending_permission": intransites_confirm_pending_permission,
-        "non_billable_consumption_permission": non_billable_consumption_permission,
-        "non_billable_consumption1_permission": non_billable_consumption1_permission,
-        "item_substitution_report_permission": item_substitution_report_permission,
-        "foc_grn_report_permission": foc_grn_report_permission,
-        "pharmacy_charges_and_implant_pending_indent_report_permission": pharmacy_charges_and_implant_pending_indent_report_permission,
-        "pharmacy_direct_returns_sale_report_permission": pharmacy_direct_returns_sale_report_permission,
-        "current_inpatients_report_permission": current_inpatients_report_permission,
-        "consigned_item_detail_report_permission": consigned_item_detail_report_permission,
-        "schedule_h1_drug_report_permission": schedule_h1_drug_report_permission,
-        "pharmacy_ward_return_requests_with_status_report_permission": pharmacy_ward_return_requests_with_status_report_permission,
-        "pharmacy_indent_deliver_summary_report_permission": pharmacy_indent_deliver_summary_report_permission,
-        "intransites_stk_tfr_acknowledgement_pending_permission": intransites_stk_tfr_acknowledgement_pending_permission,
-        "folley_and_central_line_permission": folley_and_central_line_permission,
-        "angiography_kit_permission": angiography_kit_permission,
-        "search_indents_by_code_permission": search_indents_by_code_permission,
-        "new_admission_dispense_report_permission": new_admission_dispense_report_permission,
-        "pharmacy_op_sale_report_userwise_permission": pharmacy_op_sale_report_userwise_permission,
-        "credit_card_reconciliation_report_permission": credit_card_reconciliation_report_permission,
-        "pharmacy_consumption_report_permission": pharmacy_consumption_report_permission,
-        "food_drug_interaction_report_permission": food_drug_interaction_report_permission,
-        "intransite_stock_permission": intransite_stock_permission,
-        "grn_data_permission": grn_data_permission,
-        "drug_duplication_override_report_permission": drug_duplication_override_report_permission,
-        "drug_interaction_override_report_permission": drug_interaction_override_report_permission,
-        "sale_consumption_report_permission": sale_consumption_report_permission,
-        "sale_consumption_report1_permission": sale_consumption_report1_permission,
-        "new_code_creation_permission": new_code_creation_permission,
-        "tvd_cabg_request_permission": tvd_cabg_request_permission,
-        "stock_amount_wise_permission": stock_amount_wise_permission,
-        "dept_issue_pending_tracker_permission": dept_issue_pending_tracker_permission,
-        "patient_indent_count_permission": patient_indent_count_permission,
-        "predischarge_medication_permission": predischarge_medication_permission,
-        "predischarge_initiate_permission": predischarge_initiate_permission,
-        "intransites_unf_sal_ret_permission": intransites_unf_sal_ret_permission,
-        "intransites_unf_stk_tfr_permission": intransites_unf_stk_tfr_permission,
-        "intransites_acknowledgement_pending_iss_permission": intransites_acknowledgement_pending_iss_permission,
-        "intransites_acknowledgement_pending_iss_rt_permission": intransites_acknowledgement_pending_iss_rt_permission,
-        "narcotic_stock_report_permission": narcotic_stock_report_permission,
-        # Finance Permission Dictionary
-        "finance_permission": finance_permission,
-        "credit_outstanding_bill_permission": credit_outstanding_bill_permission,
-        "tpa_letter_permission": tpa_letter_permission,
-        "online_consultation_report_permission": online_consultation_report_permission,
-        "contract_report_permission": contract_report_permission,
-        "admission_census_permission": admission_census_permission,
-        "card_permission": card_permission,
-        "patientwise_bill_details_permission": patientwise_bill_details_permission,
-        "package_contract_report_permission": package_contract_report_permission,
-        "covid_ot_surgery_details_permission": covid_ot_surgery_details_permission,
-        "gst_data_of_pharmacy_permission": gst_data_of_pharmacy_permission,
-        "cathlab_permission": cathlab_permission,
-        "form_61_permission": form_61_permission,
-        "packages_applied_to_patients_permission": packages_applied_to_patients_permission,
-        "gst_data_of_pharmacy_return_permission": gst_data_of_pharmacy_return_permission,
-        "gst_data_of_ip_permission": gst_data_of_ip_permission,
-        "gst_data_of_op_permission": gst_data_of_op_permission,
-        "ot_permission": ot_permission,
-        "discharge_census_permission": discharge_census_permission,
-        "gst_ipd_permission": gst_ipd_permission,
-        "revenue_data_of_sl_permission": revenue_data_of_sl_permission,
-        "revenue_data_of_sl1_permission": revenue_data_of_sl1_permission,
-        "revenue_data_of_sl2_permission": revenue_data_of_sl2_permission,
-        "revenue_data_of_sl3_permission": revenue_data_of_sl3_permission,
-        "revenue_jv_permission": revenue_jv_permission,
-        "collection_report_permission": collection_report_permission,
-        # Clinical Administration Based Permissions
-        "clinical_administration_permission": clinical_administration_permission,
-        "discharge_report_2_permission": discharge_report_2_permission,
-        "pre_discharge_report_permission": pre_discharge_report_permission,
-        "pre_discharge_report_2_permission": pre_discharge_report_2_permission,
-        "discharge_with_mis_report_permission": discharge_with_mis_report_permission,
-        "needle_prick_injury_report_permission": needle_prick_injury_report_permission,
-        "practo_report_permission": practo_report_permission,
-        "unbilled_report_permission": unbilled_report_permission,
-        "unbilled_deposit_report_permission": unbilled_deposit_report_permission,
-        "contact_report_permission": contact_report_permission,
-        "employees_antibodies_reactive_report_permission": employees_antibodies_reactive_report_permission,
-        "employees_reactive_and_non_pcr_report_permission": employees_reactive_and_non_pcr_report_permission,
-        "employee_covid_test_report_permission": employee_covid_test_report_permission,
-        "bed_location_report_permission": bed_location_report_permission,
-        "home_visit_report_permission": home_visit_report_permission,
-        "cco_billing_count_report_permission": cco_billing_count_report_permission,
-        "total_number_of_online_consultation_by_doctors_permission": total_number_of_online_consultation_by_doctors_permission,
-        "tpa_current_inpatients_permission": tpa_current_inpatients_permission,
-        "tpa_cover_letter_permission": tpa_cover_letter_permission,
-        "total_number_of_ip_patients_by_doctors_permission": total_number_of_ip_patients_by_doctors_permission,
-        "total_number_of_op_patients_by_doctors_permission": total_number_of_op_patients_by_doctors_permission,
-        "opd_changes_report_permission": opd_changes_report_permission,
-        "ehc_conversion_report_permission": ehc_conversion_report_permission,
-        "ehc_package_range_report_permission": ehc_package_range_report_permission,
-        "error_report_permission": error_report_permission,
-        "ot_query_report_permission": ot_query_report_permission,
-        "outreach_cancer_hospital_permission": outreach_cancer_hospital_permission,
-        "gipsa_report_permission": gipsa_report_permission,
-        "precision_patient_opd_and_online_consultation_list_report_permission": precision_patient_opd_and_online_consultation_list_report_permission,
-        "appointment_details_by_call_center_report_permission": appointment_details_by_call_center_report_permission,
-        "trf_report_permission": trf_report_permission,
-        "current_inpatients_clinical_admin_permission": current_inpatients_clinical_admin_permission,
-        "check_patient_registration_date_permission": check_patient_registration_date_permission,
-        "opd_consultation_report_with_address_permission": opd_consultation_report_with_address_permission,
-        "patient_registration_report_permission": patient_registration_report_permission,
-        "current_inpatients_employee_and_dependants_permission": current_inpatients_employee_and_dependants_permission,
-        "treatment_sheet_data_permission": treatment_sheet_data_permission,
-        # Marketing
-        "marketing_permission": marketing_permission,
-        "contract_effective_date_report_permission": contract_effective_date_report_permission,
-        "patient_discharge_report_permission": patient_discharge_report_permission,
-        "corporate_discharge_report_permission": corporate_discharge_report_permission,
-        "corporate_discharge_report_with_customer_code_permission": corporate_discharge_report_with_customer_code_permission,
-        "admission_report_permission": admission_report_permission,
-        "credit_letter_report_permission": credit_letter_report_permission,
-        "corporate_ip_report_permission": corporate_ip_report_permission,
-        "opd_consultation_report_permission": opd_consultation_report_permission,
-        "emergency_casualty_report_permission": emergency_casualty_report_permission,
-        "new_registration_report_permission": new_registration_report_permission,
-        "hospital_tariff_report_permission": hospital_tariff_report_permission,
-        "international_patient_report_permission": international_patient_report_permission,
-        "tpa_query_permission": tpa_query_permission,
-        "new_admission_report_permission": new_admission_report_permission,
-        # Miscellaneous_Reports
-        "miscellaneous_reports_permission": miscellaneous_reports_permission,
-        # Microbiology
-        "microbiology_permission": microbiology_permission,
-        "gx_flu_a_flu_b_rsv_permission": gx_flu_a_flu_b_rsv_permission,
-        "h1n1_detection_by_pcr_permission": h1n1_detection_by_pcr_permission,
-        "biofire_respiratory_permission": biofire_respiratory_permission,
-        "covid_19_report_with_pincode_and_ward_permission": covid_19_report_with_pincode_and_ward_permission,
-        "cbnaat_covid_report_with_pincode_permission": cbnaat_covid_report_with_pincode_permission,
-        # Billing
-        "billing_permission": billing_permission,
-        "discharge_billing_report_permission": discharge_billing_report_permission,
-        "discharge_billing_report_without_date_range_permission": discharge_billing_report_without_date_range_permission,
-        "discharge_billing_user_permission": discharge_billing_user_permission,
-        "discount_report_permission": discount_report_permission,
-        "refund_report_permission": refund_report_permission,
-        "non_medical_equipment_report_permission": non_medical_equipment_report_permission,
-        "additional_tax_on_package_room_rent_permission": additional_tax_on_package_room_rent_permission,
-        "due_deposit_report_permission": due_deposit_report_permission,
-        # Lab
-        "lab_permission": lab_permission,
-        "covid_antibodies_permission": covid_antibodies_permission,
-        "covid_pcr_permission": covid_pcr_permission,
-        "covid_2_permission": covid_2_permission,
-        "covid_antigen_permission": covid_antigen_permission,
-        "cbnaat_test_data_permission": cbnaat_test_data_permission,
-        "lab_tat_report_permission": lab_tat_report_permission,
-        "histopath_fixation_data_permission": histopath_fixation_data_permission,
-        "slide_label_data_permission": slide_label_data_permission,
-        # EHC
-        "ehc_permission": ehc_permission,
-        "ehc_operation_report_permission": ehc_operation_report_permission,
-        "ehc_operation_report_2_permission": ehc_operation_report_2_permission,
-        # Sales
-        "sales_permission": sales_permission,
-        "oncology_drugs_report_permission": oncology_drugs_report_permission,
-        # Radiology
-        "radiology_permission": radiology_permission,
-        "radiology_tat_report_permission": radiology_tat_report_permission,
-        # Internal Auditor
-        "internal_auditor_permission": internal_auditor_permission,
-        "day_care_report_permission": day_care_report_permission,
-        # ---
-        "ot_scheduling_list_report_permission": ot_scheduling_list_report_permission,
-        "non_package_covid_patient_report_permission": non_package_covid_patient_report_permission,
-        # kokilaben Facility in context
-    }
+    all_group_permissions = request.user.groups.values()
+    context = {}
+    for group_permission in all_group_permissions:
+        context.update({group_permission["page_permission"]: group_permission["name"]})
+    context.update({"user_name": request.user})
     return render(request, "reports/kh_nav.html", context)
 
 
@@ -2113,6 +1434,9 @@ def pharmacy_indent_deliver_summary_report(request):
             },
         ]
     context = {
+        "date_form": DateForm(),
+        "date_template": "date_template",
+        "time_template": "time_template",
         "facilities": facility,
         "facility_template": "facility_template",
         "user_name": request.user.username,
@@ -2124,14 +1448,23 @@ def pharmacy_indent_deliver_summary_report(request):
     elif request.method == "POST":
         try:
             facility_code = request.POST["facility_dropdown"]
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+            from_time = request.POST["from_time"]
+            to_time = request.POST["to_time"]
         except MultiValueDictKeyError:
             context["error"] = "😒 Please Select a facility from the dropdown list"
             return render(request, "reports/one_for_all.html", context)
+
+        from_date = from_date + " " + from_time
+        to_date = to_date + " " + to_time
         db = Ora()
         (
             pharmacy_indent_deliver_summary_report_value,
             column_name,
-        ) = db.get_pharmacy_indent_deliver_summary_report(facility_code)
+        ) = db.get_pharmacy_indent_deliver_summary_report(
+            from_date, to_date, facility_code
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=pharmacy_indent_deliver_summary_report_value,
@@ -2867,7 +2200,7 @@ def tvd_cabg_request(request):
     context = {
         "date_template": "date_template",
         "user_name": request.user.username,
-        "page_name": "Pharmacy - TVD CABG Request",
+        "page_name": "TVD CABG Request",
         "date_form": DateForm(),
     }
     if request.method == "GET":
@@ -4238,7 +3571,22 @@ def gst_ipd(request):
 @login_required(login_url="login")
 @allowed_users("Finance - Revenue Data of SL")
 def revenue_data_of_sl(request):
+    dropdown_options = [
+        {
+            "option_value": "revenue_data_sl",
+            "option_name": "Revenue Data SL [0]",
+        },
+        {
+            "option_value": "revenue_data_sl1",
+            "option_name": "Revenue Data 1",
+        },
+        {
+            "option_value": "revenue_data_sl2",
+            "option_name": "Revenue Data 2",
+        },
+    ]
     context = {
+        "dropdown_options": dropdown_options,
         "user_name": request.user.username,
         "page_name": "Revenue Data of SL",
     }
@@ -4246,8 +3594,11 @@ def revenue_data_of_sl(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        revenue_data_table = request.POST["dropdown_options"]
         db = Ora()
-        revenue_data_of_sl_data, column_name = db.get_revenue_data_of_sl()
+        revenue_data_of_sl_data, column_name = db.get_revenue_data_of_sl(
+            revenue_data_table
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=revenue_data_of_sl_data,
@@ -4266,68 +3617,8 @@ def revenue_data_of_sl(request):
 
 
 @login_required(login_url="login")
-@allowed_users("Finance - Revenue Data of SL 1")
-def revenue_data_of_sl1(request):
-    context = {
-        "user_name": request.user.username,
-        "page_name": "Revenue Data of SL 1",
-    }
-    if request.method == "GET":
-        return render(request, "reports/one_for_all.html", context)
-
-    elif request.method == "POST":
-        db = Ora()
-        revenue_data_of_sl1_data, column_name = db.get_revenue_data_of_sl1()
-        excel_file_path = excel_generator(
-            page_name=context["page_name"],
-            data=revenue_data_of_sl1_data,
-            column=column_name,
-        )
-
-        if not revenue_data_of_sl1_data:
-            context["error"] = "Sorry!!! No Data Found"
-            return render(request, "reports/one_for_all.html", context)
-
-        else:
-            return FileResponse(
-                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
-            )
-            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl1_data':revenue_data_of_sl1_data, 'user_name':request.user.username})
-
-
-@login_required(login_url="login")
-@allowed_users("Finance - Revenue Data of SL 2")
-def revenue_data_of_sl2(request):
-    context = {
-        "user_name": request.user.username,
-        "page_name": "Revenue Data of SL 2",
-    }
-    if request.method == "GET":
-        return render(request, "reports/one_for_all.html", context)
-
-    elif request.method == "POST":
-        db = Ora()
-        revenue_data_of_sl2_data, column_name = db.get_revenue_data_of_sl2()
-        excel_file_path = excel_generator(
-            page_name=context["page_name"],
-            data=revenue_data_of_sl2_data,
-            column=column_name,
-        )
-
-        if not revenue_data_of_sl2_data:
-            context["error"] = "Sorry!!! No Data Found"
-            return render(request, "reports/one_for_all.html", context)
-
-        else:
-            return FileResponse(
-                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
-            )
-            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl2_data':revenue_data_of_sl2_data, 'user_name':request.user.username})
-
-
-@login_required(login_url="login")
-@allowed_users("Finance - Revenue Data of SL 3")
-def revenue_data_of_sl3(request):
+@allowed_users("Finance - Revenue Data of SL With Date")
+def revenue_data_of_sl_with_date(request):
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -4362,23 +3653,24 @@ def revenue_data_of_sl3(request):
             return render(request, "reports/one_for_all.html", context)
 
         db = Ora()
-        revenue_data_of_sl3_value, column_name = db.get_revenue_data_of_sl3(
-            facility_code, from_date, to_date
-        )
+        (
+            revenue_data_of_sl_with_date_value,
+            column_name,
+        ) = db.get_revenue_data_of_sl_with_date(facility_code, from_date, to_date)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
-            data=revenue_data_of_sl3_value,
+            data=revenue_data_of_sl_with_date_value,
             column=column_name,
         )
 
-        if not revenue_data_of_sl3_value:
+        if not revenue_data_of_sl_with_date_value:
             context["error"] = "Sorry!!! No Data Found"
             return render(request, "reports/one_for_all.html", context)
         else:
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl3_value':revenue_data_of_sl3_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl_with_date_value':revenue_data_of_sl_with_date_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -7352,7 +6644,7 @@ def covid_antibodies(request):
 
 
 @login_required(login_url="login")
-@allowed_users("Miscellaneous Reports - Lab - Covid Antibodies")
+@allowed_users("Miscellaneous Reports - Lab - Covid Antigen")
 def covid_antigen(request):
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":

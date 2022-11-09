@@ -93,7 +93,7 @@ def excel_generator(data, column, page_name):
             column_len = excel_data[col].astype(str).str.len().max()
 
         except:
-            pass
+            column_len = 12
 
         # Setting the length if the column header is larger
         # than the max column value length
@@ -101,7 +101,7 @@ def excel_generator(data, column, page_name):
             column_len = max(column_len, len(col)) + 4
 
         except:
-            pass
+            column_len = 12
 
         # set the column length
         worksheet.set_column(i, i, column_len)
@@ -121,7 +121,8 @@ def input_validator(request, context, value_in_post, error_name):
     if user_input:
         return user_input
 
-def excel_generator_tpa(data, column,page_name):
+
+def excel_generator_tpa(data, column, page_name):
     add_time_to_page = datetime.now()
 
     # dd/mm/YY H:M:S
@@ -143,32 +144,39 @@ def excel_generator_tpa(data, column,page_name):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     curret_path = Path(current_dir)
     parent_path = curret_path.parent
-    #TPA File Location
-    #Was forced to keep this location, as ref https://stackoverflow.com/questions/14037412/cannot-access-excel-file
-    tpa_excel_path = r"C:\Windows\System32\config\systemprofile\desktop\tpa_cover_format.xlsb"
-    #tpa_excel_path = f"{parent_path}/web_excel_files/tpa_cover_letter/tpa_cover_format.xlsb"
-    
-    #Have to use unconventional import here to avoid errors deployment in Linux
+    # TPA File Location
+    # Was forced to keep this location, as ref https://stackoverflow.com/questions/14037412/cannot-access-excel-file
+    tpa_excel_path = (
+        r"C:\Windows\System32\config\systemprofile\desktop\tpa_cover_format.xlsb"
+    )
+    # tpa_excel_path = f"{parent_path}/web_excel_files/tpa_cover_letter/tpa_cover_format.xlsb"
+
+    # Have to use unconventional import here to avoid errors deployment in Linux
 
     import pythoncom
-    #Initialize to avoid error Using XLWings with parallel processing
+
+    # Initialize to avoid error Using XLWings with parallel processing
     pythoncom.CoInitialize()
 
-    #load workbook
+    # load workbook
     xlwing_app = xw.App(visible=False)
-    tpa_workbook = xw.Book(tpa_excel_path)  
-    tpa_worksheet_query = tpa_workbook.sheets['Query']
-    tpa_worksheet_uhid = tpa_workbook.sheets['UHID']
+    tpa_workbook = xw.Book(tpa_excel_path)
+    tpa_worksheet_query = tpa_workbook.sheets["Query"]
+    tpa_worksheet_uhid = tpa_workbook.sheets["UHID"]
 
-    tpa_worksheet_query.range('A2:J500').clear_contents()
+    tpa_worksheet_query.range("A2:J500").clear_contents()
     tpa_worksheet_uhid.range("A1:A500").clear_contents()
     excel_data = pd.DataFrame(data=data, columns=list(column))
 
-    #Update workbook at specified range for Query Sheet
-    tpa_worksheet_query.range('A2').options(index=False,header=False).value = excel_data
-    tpa_worksheet_uhid.range('A1').options(index=False,header=False).value = excel_data['PATIENT_ID']
+    # Update workbook at specified range for Query Sheet
+    tpa_worksheet_query.range("A2").options(
+        index=False, header=False
+    ).value = excel_data
+    tpa_worksheet_uhid.range("A1").options(
+        index=False, header=False
+    ).value = excel_data["PATIENT_ID"]
 
-    #Close workbook
+    # Close workbook
     tpa_workbook.save(excel_file_path)
     tpa_workbook.close()
     xlwing_app.quit()

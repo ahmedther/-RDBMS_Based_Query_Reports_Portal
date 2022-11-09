@@ -23,29 +23,11 @@ from .supports import (
 
 @login_required(login_url="login")
 def indore_nav(request):
-    # Pharmacy Based permissions
-    indore_pharmacy_permission = request.user.groups.filter(name="Indore Pharmacy")
-    batchwise_stock_report_permission = request.user.groups.filter(
-        name="Pharmacy - Batch Wise Stock Report"
-    )
-    # Finance Base permissions
-    indore_finance_permission = request.user.groups.filter(name="Indore Finance")
-    collection_report_permission = request.user.groups.filter(
-        name="Finance - Collection Report"
-    )
-    indore_revenue_report_permission = request.user.groups.filter(
-        name="Indore Finance - Revenue Report"
-    )
-    context = {
-        # Pharmacy Base permissions
-        "indore_pharmacy_permission": indore_pharmacy_permission,
-        "batchwise_stock_report_permission": batchwise_stock_report_permission,
-        # Finance Permissions
-        "indore_finance_permission": indore_finance_permission,
-        "collection_report_permission": collection_report_permission,
-        "indore_revenue_report_permission": indore_revenue_report_permission,
-    }
-
+    all_group_permissions = request.user.groups.values()
+    context = {}
+    for group_permission in all_group_permissions:
+        context.update({group_permission["page_permission"]: group_permission["name"]})
+    context.update({"user_name": request.user})
     return render(request, "reports/indore_nav.html", context)
 
 

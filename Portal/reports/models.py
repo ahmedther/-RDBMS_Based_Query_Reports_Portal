@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
 
 class IAACR(models.Model):
@@ -26,3 +26,11 @@ class Employee(models.Model):
     # facility = models.OneToOneField(FacilityDropdown, on_delete=models.CASCADE)
     facility = models.ForeignKey(FacilityDropdown, on_delete=models.CASCADE)
     pr_number = models.CharField(max_length=100, null=True)
+
+    def __str__(self):
+        return self.user.username
+
+
+Group.add_to_class(
+    "page_permission", models.CharField(max_length=180, null=True, blank=True)
+)

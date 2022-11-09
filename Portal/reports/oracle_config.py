@@ -229,15 +229,20 @@ class Ora:
 
     def get_batchwise_stock_report(self, facility_code):
         batchwise_stock_report_query = f""" 
-        
+
+
         select a.STORE_CODE  as Store, a.ITEM_CODE as ItemCode,c.LONG_DESC  as ItemName,a.BATCH_ID as Batch,a.EXPIRY_DATE_OR_RECEIPT_DATE as Expiry,
-        a.QTY_ON_HAND as StockQty,decode(b.SERV_COST_AMT,null,c.UNIT_COST,b.SERV_COST_AMT) as UnitCost,b.PUBLIC_PRICE as MRP from 
-        st_item_batch a,bl_st_item_by_tradename b, mm_item c where a.ITEM_CODE = b.ITEM_CODE and a.ITEM_CODE = c.ITEM_CODE
-        and b.ITEM_CODE = c.ITEM_CODE and a.BATCH_ID = b.BATCH_ID and b.EFFECTIVE_TO_DATE is null and b.OPERATING_FACILITY_ID in ({facility_code})
+        max(a.QTY_ON_HAND) as StockQty, max(a.COMMITTED_QTY) COMMITTED_QTY, max(to_char(NVL (a.QTY_ON_HAND, 0) - NVL (a.COMMITTED_QTY, 0))) AVAIL_Qty,
+        max(decode(g.GRN_UNIT_COST_IN_PUR_UOM,null,c.UNIT_COST,g.GRN_UNIT_COST_IN_PUR_UOM)) as UnitCost,  max(g.SALE_PRICE) as MRP from 
+        st_item_batch a, mm_item c,xi_trn_grn g where
+        g.ITEM_CODE =a.ITEM_CODE and g.XI_BATCH_ID = a.BATCH_ID and g.EXPIRY_DATE= a.EXPIRY_DATE_OR_RECEIPT_DATE
+        and a.ITEM_CODE = c.ITEM_CODE
+        and g.SUPP_CODE <> '101320' 
         and a.STORE_CODE in (select store_code from mm_store where facility_id in ({facility_code}))
+        group by     a.STORE_CODE  , a.ITEM_CODE ,c.LONG_DESC  ,a.BATCH_ID ,a.EXPIRY_DATE_OR_RECEIPT_DATE  
         order by a.STORE_CODE,a.ITEM_CODE
 
-        
+
         """
         self.cursor.execute(batchwise_stock_report_query)
         batchwise_stock_report_data = self.cursor.fetchall()
@@ -887,18 +892,24 @@ order by a.DOC_NO
 
         return pharmacy_ward_return_requests_with_status_report, column_name
 
-    def get_pharmacy_indent_deliver_summary_report(self, facility_code):
+    def get_pharmacy_indent_deliver_summary_report(
+        self, from_date, to_date, facility_code
+    ):
         facility_code = facility_code[1] + facility_code[2] + "%"
         facility_code = f"'{facility_code}'"
-        print(facility_code)
 
-        stock_qurey = f""" select DISTINCT PATIENT_ID AS PatID,count(disp_no) AS IndentsCount,ORD_DATE_TIME  AS OrderDtTym,
+        stock_qurey = f""" 
+        
+        select DISTINCT PATIENT_ID AS PatID,count(disp_no) AS IndentsCount,ORD_DATE_TIME  AS OrderDtTym,
         DISPENSED_DATE_TIME AS DispensedDtTym,LOCN_CODE AS IndentLocation,BED_NO  AS BedNo
-        from ph_disp_hdr where DISPENSED_DATE_TIME >= '12-Aug-2020' AND PATIENT_ID LIKE {facility_code}
+        from ph_disp_hdr 
+        where DISPENSED_DATE_TIME between to_date(:from_date,'dd-mon-yyyy hh24:mi:ss') and to_date(:to_date,'dd-mon-yyyy hh24:mi:ss')
+        AND PATIENT_ID LIKE {facility_code}
         group by PATIENT_ID,DISPENSED_DATE_TIME,LOCN_CODE,BED_NO, ORD_DATE_TIME
-        ORDER BY DISPENSED_DATE_TIME DESC """
+        ORDER BY DISPENSED_DATE_TIME DESC
+         """
 
-        self.cursor.execute(stock_qurey)
+        self.cursor.execute(stock_qurey, [from_date, to_date])
         data = self.cursor.fetchall()
 
         column_name = [i[0] for i in self.cursor.description]
@@ -2580,12 +2591,12 @@ ORDER BY A.ASSIGN_CARE_LOCN_CODE
 
         return foc_grn_report_data, column_name
 
-    def get_revenue_data_of_sl(self):
+    def get_revenue_data_of_sl(self, revenue_data_table):
 
-        get_revenue_data_of_sl_qurey = """
+        get_revenue_data_of_sl_qurey = f"""
         
         
-            select * from revenue_data_sl
+            select * from {revenue_data_table}
         
         """
 
@@ -2600,48 +2611,6 @@ ORDER BY A.ASSIGN_CARE_LOCN_CODE
             self.ora_db.close()
 
         return get_revenue_data_of_sl_data, column_name
-
-    def get_revenue_data_of_sl1(self):
-
-        get_revenue_data_of_sl1_qurey = """
-        
-        
-            select * from revenue_data_sl1
-        
-        """
-
-        self.cursor.execute(get_revenue_data_of_sl1_qurey)
-        get_revenue_data_of_sl1_data = self.cursor.fetchall()
-
-        column_name = [i[0] for i in self.cursor.description]
-
-        if self.cursor:
-            self.cursor.close()
-        if self.ora_db:
-            self.ora_db.close()
-
-        return get_revenue_data_of_sl1_data, column_name
-
-    def get_revenue_data_of_sl2(self):
-
-        get_revenue_data_of_sl2_qurey = """
-        
-        
-            select * from revenue_data_sl2
-        
-        """
-
-        self.cursor.execute(get_revenue_data_of_sl2_qurey)
-        get_revenue_data_of_sl2_data = self.cursor.fetchall()
-
-        column_name = [i[0] for i in self.cursor.description]
-
-        if self.cursor:
-            self.cursor.close()
-        if self.ora_db:
-            self.ora_db.close()
-
-        return get_revenue_data_of_sl2_data, column_name
 
     def get_discharge_with_mis_report(self, facility_code, from_date, to_date):
         discharge_with_mis_report_qurey = f""" 
@@ -2768,8 +2737,8 @@ ORDER BY A.ASSIGN_CARE_LOCN_CODE
 
         return discharge_report_2_data, column_name
 
-    def get_revenue_data_of_sl3(self, facility_code, from_date, to_date):
-        get_revenue_data_of_sl3_qurey = f""" 
+    def get_revenue_data_of_sl3_with_date(self, facility_code, from_date, to_date):
+        get_revenue_data_of_sl3_with_date_qurey = f""" 
         
         SELECT NULL ser_date, NULL ser_time,
                                        --a.acct_dept_code dept_code, e.long_desc dept_name,
@@ -2975,8 +2944,10 @@ and to_date( :to_date, 'dd-mon-yyyy' ) + (1-1/24/60/60)
       
 """
 
-        self.cursor.execute(get_revenue_data_of_sl3_qurey, [from_date, to_date])
-        get_revenue_data_of_sl3_data = self.cursor.fetchall()
+        self.cursor.execute(
+            get_revenue_data_of_sl3_with_date_qurey, [from_date, to_date]
+        )
+        get_revenue_data_of_sl3_with_date_data = self.cursor.fetchall()
 
         column_name = [i[0] for i in self.cursor.description]
 
@@ -2985,7 +2956,7 @@ and to_date( :to_date, 'dd-mon-yyyy' ) + (1-1/24/60/60)
         if self.ora_db:
             self.ora_db.close()
 
-        return get_revenue_data_of_sl3_data, column_name
+        return get_revenue_data_of_sl3_with_date_data, column_name
 
     def get_revenue_jv(self, revenue_data):
         revenue_jv_qurey = f""" 

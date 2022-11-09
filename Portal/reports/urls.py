@@ -300,9 +300,11 @@ urlpatterns = [
         name="item_substitution_report",
     ),
     path("revenue_data_of_sl/", views.revenue_data_of_sl, name="revenue_data_of_sl"),
-    path("revenue_data_of_sl1/", views.revenue_data_of_sl1, name="revenue_data_of_sl1"),
-    path("revenue_data_of_sl2/", views.revenue_data_of_sl2, name="revenue_data_of_sl2"),
-    path("revenue_data_of_sl3/", views.revenue_data_of_sl3, name="revenue_data_of_sl3"),
+    path(
+        "revenue_data_of_sl_with_date/",
+        views.revenue_data_of_sl_with_date,
+        name="revenue_data_of_sl_with_date",
+    ),
     path("revenue_jv/", views.revenue_jv, name="revenue_jv"),
     path("collection_report/", views.collection_report, name="collection_report"),
     path(
