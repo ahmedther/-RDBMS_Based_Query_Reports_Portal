@@ -3,10 +3,9 @@ import os
 import logging
 import xlwings as xw
 
-
 from pathlib import Path
 from django.shortcuts import render
-from datetime import datetime
+from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool
 
 from .oracle_config import Ora
@@ -182,3 +181,12 @@ def excel_generator_tpa(data, column, page_name):
     xlwing_app.quit()
 
     return excel_file_path
+
+
+def get_last_three_dates():
+    dates = []
+    for i in range(1, 4):
+        print(i)
+        date_now = datetime.now() - timedelta(days=i)
+        dates.append(date_now.strftime(f"%d-%b-%Y"))
+    return dates

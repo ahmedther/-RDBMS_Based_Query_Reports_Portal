@@ -34,6 +34,7 @@
                                                       {% if intransites_acknowledgement_pending_iss_permission %}<li><a class="dropdown-item text-wrap" href={% url 'intransites_acknowledgement_pending_iss' %}>Intransites Acknowledgement Pending ISS</a>{% endif %}
                                                         {% if intransites_acknowledgement_pending_iss_rt_permission %}<li><a class="dropdown-item text-wrap" href={% url 'intransites_acknowledgement_pending_iss_rt' %}>Intransites Acknowledgement Pending ISS RT</a>{% endif %}
                                                           {% if narcotic_stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'narcotic_stock_report' %}>Narcotic Stock Report</a>{% endif %}
+                                                            {% if schedule_item_iv_and_consumables_permission %}<li><a class="dropdown-item text-wrap" href={% url 'schedule_item_iv_and_consumables' %}>Schedule Item IV And Consumables</a>{% endif %}
                                </ul>
                             </div>  <!-- col-megamenu.// -->
                           </div><!-- end col-3 -->
@@ -55,6 +56,8 @@
                                                       {% if non_billable_consumption1_permission %} <li><a class="dropdown-item text-wrap" href={% url 'non_billable_consumption1' %}>Non Billable Consumption 1</a>{% endif %}
                                                         {% if item_substitution_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'item_substitution_report' %}>Item Substitution Report</a>{% endif %}
                                                           {% if foc_grn_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'foc_grn_report' %}>FOC GRN Report</a>{% endif %}
+                                                            {% if critical_supply_list_permission %}<li><a class="dropdown-item text-wrap" href={% url 'critical_supply_list' %}>Critical Supply List</a>{% endif %}
+                                                              {% if consignment_grn_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'consignment_grn_report' %}>Consignment GRN Report</a>{% endif %}
                               </ul>
                             </div>  <!-- col-megamenu.// -->
                           </div><!-- end col-3 -->
@@ -73,6 +76,8 @@
                                                 {% if folley_and_central_line_permission %}<li><a class="dropdown-item text-wrap" href={% url 'folley_and_central_line' %}>Folley and Central Line</a>{% endif %}
                                                   {% if angiography_kit_permission %}<li><a class="dropdown-item text-wrap" href={% url 'angiography_kit' %}>Angiography Kit</a>{% endif %}
                                                     {% if search_indents_by_code_permission %}<li><a class="dropdown-item text-wrap" href={% url 'search_indents_by_code' %}>Search Indents By Code</a>{% endif %}
+                                                      {% if midnight_stock_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'midnight_stock_report' %}>Midnight Stock Report</a>{% endif %}
+                                                        {% if overall_pharmacy_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'overall_pharmacy_consumption_report' %}>Overall Pharmacy Consumption Report</a>{% endif %}
                               </ul>
                             </div>  <!-- col-megamenu.// -->
                           </div>
@@ -95,6 +100,7 @@
                                                         {% if stock_amount_wise_permission %}<li><a class="dropdown-item text-wrap" href={% url 'stock_amount_wise' %}>Stock Amount-Wise</a>{% endif %}
                                                           {% if dept_issue_pending_tracker_permission %}<li><a class="dropdown-item text-wrap" href={% url 'dept_issue_pending_tracker' %}>Dept Issue Pending Tracker</a>{% endif %}
                                                             {% if patient_indent_count_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patient_indent_count' %}>Patient Indent Count</a>{% endif %}
+                                                              {% if eto_item_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'eto_item_report' %}>ETO Item Report</a>{% endif %}
 
                               </ul>
                             </div>  <!-- col-megamenu.// -->
@@ -126,6 +132,7 @@
                                           {% if admission_census_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admission_census' %}>Admission Census</a>{% endif %}
                                             {% if card_permission %}<li><a class="dropdown-item text-wrap" href={% url 'card' %}>Card</a>{% endif %}
                                               {% if patientwise_bill_details_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patientwise_bill_details' %}>Patient-Wise Bill Details</a>{% endif %}
+                                                {% if pd_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pd_report' %}>PD Report</a>{% endif %}
 
 
                                   </ul>
@@ -158,6 +165,7 @@
                                         {% if ot_permission %}<li><a class="dropdown-item text-wrap" href={% url 'ot' %}>OT</a>{% endif %}
                                           {% if discharge_census_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_census' %}>Discharge Census</a>{% endif %}
                                             {% if gst_ipd_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gst_ipd' %}>GST IPD</a>{% endif %}
+                                              {% if bed_charges_occupancy_permission %}<li><a class="dropdown-item text-wrap" href={% url 'bed_charges_occupancy' %}>Bed Charges Occupancy</a>{% endif %}
 
                                 </ul>
                               </div>  <!-- col-megamenu.// -->
@@ -170,7 +178,10 @@
                                   {% if revenue_data_of_sl_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl' %}>Revenue Data of SL</a>{% endif %}
                                         {% if revenue_data_of_sl_with_date_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_of_sl_with_date' %}>Revenue Data of SL With Date</a>{% endif %}
                                           {% if revenue_jv_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_jv' %}>Revenue JV</a>{% endif %}
-                                            {% if collection_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'collection_report' %}>Collection Report</a>{% endif %}
+                                            {% if revenue_data_with_dates_permission %}<li><a class="dropdown-item text-wrap" href={% url 'revenue_data_with_dates' %}>Revenue Data With Dates</a>{% endif %}
+                                              {% if collection_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'collection_report' %}>Collection Report</a>{% endif %}
+                                                {% if discount_report_em_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discount_report_em' %}>Discount Report EM</a>{% endif %}
+                                                  {% if total_bills_for_period_permission %}<li><a class="dropdown-item text-wrap" href={% url 'total_bills_for_period' %}>Total Bills For Period</a>{% endif %}
 
                                 </ul>
                               </div>  <!-- col-megamenu.// -->
@@ -242,6 +253,7 @@
                                             {% if ot_query_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'ot_query_report' %}>OT Query Report</a>{% endif %}
                                               {% if outreach_cancer_hospital_permission %}<li><a class="dropdown-item text-wrap" href={% url 'outreach_cancer_hospital' %}>Outreach Cancer Hospital</a>{% endif %}
                                                 {% if patient_registration_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'patient_registration_report' %}>Patient Registration Report</a>{% endif %}
+                                                  {% if current_inpatients_pan_card_and_form16_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'current_inpatients_pan_card_and_form16_report' %}>Current Inpatients PAN Card and Form16 Report</a>{% endif %}
                                 </ul>
                             </div>  <!-- col-megamenu.// -->
                           </div>
@@ -256,6 +268,7 @@
                                         {% if current_inpatients_clinical_admin_permission %}<li><a class="dropdown-item text-wrap" href={% url 'current_inpatients_clinical_admin' %}>Current Inpatients(Clinical Admin)</a>{% endif %}
                                           {% if check_patient_registration_date_permission %}<li><a class="dropdown-item text-wrap" href={% url 'check_patient_registration_date' %}>Check Patient Registration Date</a>{% endif %}
                                             {% if opd_consultation_report_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'opd_consultation_report_with_address' %}>OPD Consultation Report With Address</a>{% endif %}
+                                              {% if initial_assessment_indicator_permission %}<li><a class="dropdown-item text-wrap" href={% url 'initial_assessment_indicator' %}>Initial Assessment Indicator</a>{% endif %}
 
                               </ul>
                             </div>  <!-- col-megamenu.// -->
@@ -344,6 +357,7 @@
 
 
 
+
                                 {% if microbiology_permission %}
                                   <h4 class="text-left" style="font-weight:bold;">&#160 Microbiology</h4>
 
@@ -354,6 +368,7 @@
                                           {% if covid_19_report_with_pincode_and_ward_permission %}<li><a class="dropdown-item text-wrap" href={% url 'covid_19_report_with_pincode_and_ward' %}>COVID 19 Report With Pincode And Ward
                                           </a>{% endif %}
                                             {% if cbnaat_covid_report_with_pincode_permission %}<li><a class="dropdown-item text-wrap" href={% url 'cbnaat_covid_report_with_pincode' %}>CBNAAT COVID Report With Pincode</a>{% endif %}
+                                              {% if mucormycosis_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'mucormycosis_report' %}>Mucormycosis Report</a>{% endif %}
                                     </ul>
                                   <!--  End Billing If-->
 
@@ -371,14 +386,15 @@
 
                                   <ul class="list-unstyled">
                                     {% if discharge_billing_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_billing_report' %}>Discharge Billing Report</a>{% endif %}
-                                    {% if discharge_billing_report_without_date_range_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_billing_report_without_date_range' %}>Discharge Billing Report Without Date Range</a>{% endif %}
-                                      {% if discharge_billing_user_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_billing_user' %}>Discharge Billing User</a>{% endif %}
-                                        {% if discount_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discount_report' %}>Discount Report</a>{% endif %}
-                                          {% if refund_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'refund_report' %}>Refund Report</a>{% endif %}
-                                            {% if non_medical_equipment_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'non_medical_equipment_report' %}>Non Medical Equipment Report</a>{% endif %}
-                                              {% if additional_tax_on_package_room_rent_permission %}<li><a class="dropdown-item text-wrap" href={% url 'additional_tax_on_package_room_rent' %}>Additional Tax On Package Room Rent</a>{% endif %}
-                                                {% if due_deposit_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'due_deposit_report' %}>Due Deposit Report</a>{% endif %}
-
+                                      {% if discharge_billing_report_without_date_range_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_billing_report_without_date_range' %}>Discharge Billing Report Without Date Range</a>{% endif %}
+                                        {% if discharge_billing_user_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discharge_billing_user' %}>Discharge Billing User</a>{% endif %}
+                                          {% if discount_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'discount_report' %}>Discount Report</a>{% endif %}
+                                            {% if refund_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'refund_report' %}>Refund Report</a>{% endif %}
+                                              {% if non_medical_equipment_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'non_medical_equipment_report' %}>Non Medical Equipment Report</a>{% endif %}
+                                                {% if additional_tax_on_package_room_rent_permission %}<li><a class="dropdown-item text-wrap" href={% url 'additional_tax_on_package_room_rent' %}>Additional Tax On Package Room Rent</a>{% endif %}
+                                                  {% if due_deposit_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'due_deposit_report' %}>Due Deposit Report</a>{% endif %}
+                                                    {% if transfer_ar_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'transfer_ar_report' %}> Transfer AR Report</a>{% endif %}
+                                                  
                                     </ul>
                                   <!--  End Billing If-->
 

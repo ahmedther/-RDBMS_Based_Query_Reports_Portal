@@ -69,7 +69,8 @@
         <div class='btnhold'>
             {% for text_field in textbox %}
             <label style="margin:10px;"for="form7"><h3><span>{{ text_field }}</span></h3></label>
-            <textarea required style ='min-width: 50vw;align-items: center; margin-bottom:20px;' name="{{ text_field }}"  class="md-textarea form-control" rows="10" id="form7"></textarea>
+            <textarea required style ='min-width: 50vw;align-items: center; margin-bottom:20px;' name="{{ text_field }}"  class="md-textarea form-control" rows="10" id="form7"
+            oninvalid="this.setCustomValidity('Please enter a valid email address')" oninput="this.setCustomValidity('')"></textarea>
             
             {% endfor %}
         </div>
@@ -123,10 +124,9 @@
 
     <div class="d-flex justify-content-center">
         <div class='btnhold'>
-            <button type="submit" class="btn btn-primary btn-lg mr-5" style='width:275px'>Search</button>
+            <button type="submit" class="btn btn-primary btn-lg mr-5 spinner" style='width:275px'>Search</button>
 
-            <button type="button" onclick="export_data()" class="btn btn-dark btn-lg"
-                style='width:275px'>Download</button>
+            <button type="submit" class="btn btn-dark btn-lg spinner" style='width:275px'>Download</button>
         </div>
     </div>
 

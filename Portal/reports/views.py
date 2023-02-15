@@ -1,4 +1,3 @@
-from multiprocessing import context
 import platform
 import pandas as pd
 
@@ -15,12 +14,7 @@ from .oracle_config import Ora
 from .decorators import unauthenticated_user, allowed_users
 from .forms import DateForm, DateTimeForm
 from .models import IAACR, FacilityDropdown, Employee
-from .supports import (
-    date_formater,
-    excel_generator,
-    excel_generator_tpa,
-    input_validator,
-)
+from .supports import *
 
 
 # Create your views here.
@@ -74,9 +68,16 @@ def signupuser(request):
             value_in_post="username",
         )
 
+        if " " in username:
+            context[
+                "error"
+            ] = "Invalid Username. Spaces are not allowed in Username field"
+            return render(request, "reports/signupuser.html", context)
+
         if request.POST["password1"] == request.POST["password2"]:
 
             try:
+
                 user = User.objects.create_user(
                     request.POST["username"],
                     password=request.POST["password1"],
@@ -97,7 +98,7 @@ def signupuser(request):
                     "success1"
                 ] = "Please enter your User ID and Password to Sign In"
 
-                return render(request, "reports/login_page.html", context)
+                return redirect("login")
 
             except IntegrityError:
                 context[
@@ -127,9 +128,6 @@ def login_page(request):
             password=request.POST["password"],
         )
 
-        global user_name
-        user_name = request.POST["username"]
-
         if user is None:
             return render(
                 request,
@@ -141,9 +139,9 @@ def login_page(request):
             )
         else:
             login(request, user)
-            return render(
-                request, "reports/index.html", {"user_name": request.user.username}
-            )
+            user_full_name = request.user.get_full_name()
+            context = {"user_name": user_full_name}
+            return render(request, "reports/index.html", context)
 
 
 @login_required(login_url="login")
@@ -159,7 +157,7 @@ def landing_page(request):
 
     if request.method == "GET":
         return render(
-            request, "reports/index.html", {"user_name": request.user.username}
+            request, "reports/index.html", {"user_name": request.user.get_full_name()}
         )
 
 
@@ -169,7 +167,7 @@ def kh_nav(request):
     context = {}
     for group_permission in all_group_permissions:
         context.update({group_permission["page_permission"]: group_permission["name"]})
-    context.update({"user_name": request.user})
+    context.update({"user_name": request.user.get_full_name()})
     return render(request, "reports/kh_nav.html", context)
 
 
@@ -177,7 +175,7 @@ def kh_nav(request):
 @allowed_users("Pharmacy - Stock")
 def stock(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Stock",
     }
     if request.method == "GET":
@@ -198,22 +196,45 @@ def stock(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'stock_data':stock_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'stock_data':stock_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Stock Report")
 def stock_report(request):
+    dropdown_options = []
+    all_dropdown_options = {"ALL": " "}
+    db = Ora()
+    store_data = db.get_store_code_stock_reports()
+
+    for data in store_data:
+        dropdown_options.append(
+            {"option_value": f"'{data[0]}'", "option_name": f"{data[1]} - {data[0]}"}
+        )
+        all_dropdown_options["ALL"] = all_dropdown_options["ALL"] + f"'{data[0]}',"
+
+    all_dropdown_options["ALL"] = all_dropdown_options["ALL"][:-1]
+
+    dropdown_options.append(
+        {
+            "option_value": all_dropdown_options["ALL"],
+            "option_name": "ALL",
+        }
+    )
+
     context = {
-        "user_name": request.user.username,
+        "dropdown_options": dropdown_options,
+        "user_name": request.user.get_full_name(),
         "page_name": "Stock Report",
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+
+        store_code = request.POST["dropdown_options"]
         db = Ora()
-        stock_report, column_name = db.get_stock_reports()
+        stock_report, column_name = db.get_stock_reports(store_code)
         excel_file_path = excel_generator(
             page_name="Stock Report", column=column_name, data=stock_report
         )
@@ -226,7 +247,7 @@ def stock_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'stock_report':stock_report, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'stock_report':stock_report, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -243,7 +264,7 @@ def stock_value(request):
 
     context = {
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Stock Value",
     }
 
@@ -266,7 +287,7 @@ def stock_value(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'stock_value':stock_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'stock_value':stock_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -283,7 +304,7 @@ def bin_location_op(request):
         )
     context = {
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Bin Location OP",
     }
     if request.method == "GET":
@@ -307,14 +328,14 @@ def bin_location_op(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'bin_location_op_value':bin_location_op_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'bin_location_op_value':bin_location_op_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Itemwise Storewise Stock Value")
 def itemwise_storewise_stock(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Itemwise Storewise Stock Value",
     }
 
@@ -338,7 +359,7 @@ def itemwise_storewise_stock(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'itemwise_storewise_stock_value':itemwise_storewise_stock_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'itemwise_storewise_stock_value':itemwise_storewise_stock_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -357,7 +378,7 @@ def batchwise_stock_report(request):
     context = {
         "facilities": facility,
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Batch Wise Stock Report",
     }
     if request.method == "GET":
@@ -387,7 +408,7 @@ def batchwise_stock_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'batchwise_stock_report_value':batchwise_stock_report_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'batchwise_stock_report_value':batchwise_stock_report_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -406,7 +427,7 @@ def pharmacy_op_returns(request):
     context = {
         "facilities": facility,
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy OP Returns",
     }
     if request.method == "GET":
@@ -437,7 +458,7 @@ def pharmacy_op_returns(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_op_returns_value':pharmacy_op_returns_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_op_returns_value':pharmacy_op_returns_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -468,7 +489,7 @@ def restricted_antimicrobials_consumption_report(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Restricted Antimicrobials Consumption Report",
         "date_form": DateForm(),
     }
@@ -515,7 +536,7 @@ def restricted_antimicrobials_consumption_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'restricted_antimicrobials_consumption_report_value':restricted_antimicrobials_consumption_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'restricted_antimicrobials_consumption_report_value':restricted_antimicrobials_consumption_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -553,7 +574,7 @@ def pharmacy_itemwise_sale_report(request):
         "facility_template": "facility_template",
         "date_template": "date_template",
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Itemwise Sale Report",
         "date_form": DateForm(),
     }
@@ -604,14 +625,14 @@ def pharmacy_itemwise_sale_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_itemwise_sale_report':pharmacy_itemwise_sale_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'drugs' : drugs})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_itemwise_sale_report':pharmacy_itemwise_sale_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'drugs' : drugs})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Pharmacy Indent Report")
 def pharmacy_indent_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Indent Report",
     }
     if request.method == "GET":
@@ -633,25 +654,46 @@ def pharmacy_indent_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_indent_report_data':pharmacy_indent_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_indent_report_data':pharmacy_indent_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - New Admission's Indents Report")
 def new_admission_indents_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "date_template": "date_template",
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "New Admission’s Indents Report",
+        "date_form": DateForm(),
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
         (
             new_admission_indents_report_data,
             column_name,
-        ) = db.get_new_admission_indents_report()
+        ) = db.get_new_admission_indents_report(from_date, to_date, facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=new_admission_indents_report_data,
@@ -666,7 +708,7 @@ def new_admission_indents_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'new_admission_indents_report_data':new_admission_indents_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'new_admission_indents_report_data':new_admission_indents_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -674,7 +716,7 @@ def new_admission_indents_report(request):
 def return_medication_without_return_request_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Return Medication Without Return Request Report",
         "date_form": DateForm(),
     }
@@ -711,16 +753,28 @@ def return_medication_without_return_request_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'return_medication_without_return_request_report_value':return_medication_without_return_request_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'return_medication_without_return_request_report_value':return_medication_without_return_request_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Deleted Pharmacy Prescriptions Report")
 def deleted_pharmacy_prescriptions_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
         "time_template": "time_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Deleted Pharmacy Prescriptions Report",
         "date_form": DateForm(),
     }
@@ -728,6 +782,11 @@ def deleted_pharmacy_prescriptions_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         from_time = request.POST["from_time"]
         to_time = request.POST["to_time"]
 
@@ -741,7 +800,9 @@ def deleted_pharmacy_prescriptions_report(request):
         (
             deleted_pharmacy_prescriptions_report_value,
             deleted_pharmacy_prescriptions_report_column_name,
-        ) = db.get_deleted_pharmacy_prescriptions_report(from_date, to_date)
+        ) = db.get_deleted_pharmacy_prescriptions_report(
+            from_date, to_date, facility_code
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=deleted_pharmacy_prescriptions_report_value,
@@ -756,7 +817,7 @@ def deleted_pharmacy_prescriptions_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'deleted_pharmacy_prescriptions_report_value':deleted_pharmacy_prescriptions_report_value, "deleted_pharmacy_prescriptions_report_column_name":deleted_pharmacy_prescriptions_report_column_name, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'deleted_pharmacy_prescriptions_report_value':deleted_pharmacy_prescriptions_report_value, "deleted_pharmacy_prescriptions_report_column_name":deleted_pharmacy_prescriptions_report_column_name, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -797,7 +858,7 @@ def pharmacy_direct_sales_report(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Direct Sales Report",
         "date_form": DateForm(),
     }
@@ -835,7 +896,7 @@ def pharmacy_direct_sales_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_direct_sales_report_value':pharmacy_direct_sales_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_direct_sales_report_value':pharmacy_direct_sales_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -843,7 +904,7 @@ def pharmacy_direct_sales_report(request):
 def intransites_unf_sal(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Unf Sal",
         "date_form": DateForm(),
     }
@@ -872,14 +933,14 @@ def intransites_unf_sal(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_unf_sal_data':intransites_unf_sal_data, "intransites_unf_sal_column_name":intransites_unf_sal_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Intransites Unf Sal"})
+            # return render(request,'reports/one_for_all.html', {'intransites_unf_sal_data':intransites_unf_sal_data, "intransites_unf_sal_column_name":intransites_unf_sal_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Intransites Unf Sal"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Intransites Confirm Pending")
 def intransites_confirm_pending(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Confirm Pending",
     }
     if request.method == "GET":
@@ -905,7 +966,7 @@ def intransites_confirm_pending(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_confirm_pending_data':intransites_confirm_pending_data, "intransites_confirm_pending_column_name":intransites_confirm_pending_column_name,'user_name':request.user.username, "page_name" : "Intransites Confirm Pending"})
+            # return render(request,'reports/one_for_all.html', {'intransites_confirm_pending_data':intransites_confirm_pending_data, "intransites_confirm_pending_column_name":intransites_confirm_pending_column_name,'user_name':request.user.get_full_name(), "page_name" : "Intransites Confirm Pending"})
 
 
 @login_required(login_url="login")
@@ -935,7 +996,7 @@ def non_billable_consumption(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Non Billable Consumption",
         "date_form": DateForm(),
     }
@@ -972,7 +1033,7 @@ def non_billable_consumption(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'non_billable_consumption_data':non_billable_consumption_data, "non_billable_consumption_column_name":non_billable_consumption_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Non Billable Consumption"})
+            # return render(request,'reports/one_for_all.html', {'non_billable_consumption_data':non_billable_consumption_data, "non_billable_consumption_column_name":non_billable_consumption_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Non Billable Consumption"})
 
 
 @login_required(login_url="login")
@@ -980,7 +1041,7 @@ def non_billable_consumption(request):
 def non_billable_consumption1(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Non Billable Consumption 1",
         "date_form": DateForm(),
     }
@@ -1010,15 +1071,27 @@ def non_billable_consumption1(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'non_billable_consumption1_data':non_billable_consumption1_data, "non_billable_consumption1_column_name":non_billable_consumption1_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Non Billable Consumption 1"})
+            # return render(request,'reports/one_for_all.html', {'non_billable_consumption1_data':non_billable_consumption1_data, "non_billable_consumption1_column_name":non_billable_consumption1_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Non Billable Consumption 1"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Item Substitution Report")
 def item_substitution_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Item Substitution Report",
         "date_form": DateForm(),
     }
@@ -1027,13 +1100,18 @@ def item_substitution_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
         item_substitution_report_value, column_name = db.get_item_substitution_report(
-            from_date, to_date
+            from_date, to_date, facility_code
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -1049,26 +1127,42 @@ def item_substitution_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'item_substitution_report_value':item_substitution_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'item_substitution_report_value':item_substitution_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - FOC GRN Report")
 def foc_grn_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "FOC GRN Report",
-        "date_form": DateForm(),
     }
 
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         # Manually format To Date fro Sql Query
 
         db = Ora()
-        foc_grn_report_value, column_name = db.get_foc_grn_report()
+        foc_grn_report_value, column_name = db.get_foc_grn_report(facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=foc_grn_report_value,
@@ -1083,7 +1177,115 @@ def foc_grn_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'foc_grn_report_value':foc_grn_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'foc_grn_report_value':foc_grn_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Critical Supply List")
+def critical_supply_list(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "Critical Supply List",
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+        # Manually format To Date fro Sql Query
+
+        db = Ora()
+        critical_supply_list_value, column_name = db.get_critical_supply_list(
+            facility_code
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=critical_supply_list_value,
+            column=column_name,
+        )
+
+        if not critical_supply_list_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'critical_supply_list_value':critical_supply_list_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Consignment GRN Report")
+def consignment_grn_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "date_template": "date_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "Consignment GRN Report",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        consignment_grn_report_value, column_name = db.get_consignment_grn_report(
+            from_date, to_date, facility_code
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=consignment_grn_report_value,
+            column=column_name,
+        )
+
+        if not consignment_grn_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'consignment_grn_report_value':consignment_grn_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1103,7 +1305,7 @@ def pharmacy_charges_and_implant_pending_indent_report(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Charges & Implant Pending Indent Report",
         "date_form": DateForm(),
     }
@@ -1145,7 +1347,7 @@ def pharmacy_charges_and_implant_pending_indent_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_charges_and_implant_pending_indent_report_value':pharmacy_charges_and_implant_pending_indent_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_charges_and_implant_pending_indent_report_value':pharmacy_charges_and_implant_pending_indent_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1153,7 +1355,7 @@ def pharmacy_charges_and_implant_pending_indent_report(request):
 def pharmacy_direct_returns_sale_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Direct Returns Sale Report",
         "date_form": DateForm(),
     }
@@ -1184,7 +1386,7 @@ def pharmacy_direct_returns_sale_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_direct_returns_sale_report_value':pharmacy_direct_returns_sale_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_direct_returns_sale_report_value':pharmacy_direct_returns_sale_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1203,7 +1405,7 @@ def current_inpatients_report(request):
     context = {
         "facilities": facility,
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Current Inpatients Reports",
     }
     if request.method == "GET":
@@ -1233,7 +1435,7 @@ def current_inpatients_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'current_inpatients_report_value':current_inpatients_report_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'current_inpatients_report_value':current_inpatients_report_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -1251,7 +1453,7 @@ def consigned_item_detail_report(request):
     context = {
         "dropdown_options": dropdown_options,
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Consigned Item Detail Report",
         "date_form": DateForm(),
     }
@@ -1283,7 +1485,7 @@ def consigned_item_detail_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'consigned_item_detail_report_value':consigned_item_detail_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'consigned_item_detail_report_value':consigned_item_detail_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1303,7 +1505,7 @@ def schedule_h1_drug_report(request):
         "facility_template": "facility_template",
         "date_template": "date_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Schedule H1 Drug Report",
         "date_form": DateForm(),
     }
@@ -1343,7 +1545,7 @@ def schedule_h1_drug_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'schedule_h1_drug_report_value':schedule_h1_drug_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'schedule_h1_drug_report_value':schedule_h1_drug_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -1363,7 +1565,7 @@ def pharmacy_ward_return_requests_with_status_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Ward Return Requests with Status Report",
         "date_form": DateForm(),
     }
@@ -1417,7 +1619,7 @@ def pharmacy_ward_return_requests_with_status_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_ward_return_requests_with_status_report_value':pharmacy_ward_return_requests_with_status_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_ward_return_requests_with_status_report_value':pharmacy_ward_return_requests_with_status_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -1439,7 +1641,7 @@ def pharmacy_indent_deliver_summary_report(request):
         "time_template": "time_template",
         "facilities": facility,
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Indent Deliver Summary Report",
     }
     if request.method == "GET":
@@ -1478,7 +1680,7 @@ def pharmacy_indent_deliver_summary_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_indent_deliver_summary_report_value':pharmacy_indent_deliver_summary_report_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_indent_deliver_summary_report_value':pharmacy_indent_deliver_summary_report_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -1497,7 +1699,7 @@ def intransites_stk_tfr_acknowledgement_pending(request):
     context = {
         "facilities": facility,
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Stk Tfr Acknowledgement Pending Report",
     }
     if request.method == "GET":
@@ -1528,7 +1730,7 @@ def intransites_stk_tfr_acknowledgement_pending(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_stk_tfr_acknowledgement_pending_column_name':intransites_stk_tfr_acknowledgement_pending_column_name,'intransites_stk_tfr_acknowledgement_pending_value':intransites_stk_tfr_acknowledgement_pending_value, 'user_name':request.user.username,"page_name" : "Intransites Stk Tfr Acknowledgement Pending Report"})
+            # return render(request,'reports/one_for_all.html', {'intransites_stk_tfr_acknowledgement_pending_column_name':intransites_stk_tfr_acknowledgement_pending_column_name,'intransites_stk_tfr_acknowledgement_pending_value':intransites_stk_tfr_acknowledgement_pending_value, 'user_name':request.user.get_full_name(),"page_name" : "Intransites Stk Tfr Acknowledgement Pending Report"})
 
 
 @login_required(login_url="login")
@@ -1536,7 +1738,7 @@ def intransites_stk_tfr_acknowledgement_pending(request):
 def folley_and_central_line(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Folley and Central Line",
         "date_form": DateForm(),
     }
@@ -1565,7 +1767,7 @@ def folley_and_central_line(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'folley_and_central_line_data':folley_and_central_line_data, "folley_and_central_line_column_name":folley_and_central_line_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Folley and Central Line"})
+            # return render(request,'reports/one_for_all.html', {'folley_and_central_line_data':folley_and_central_line_data, "folley_and_central_line_column_name":folley_and_central_line_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Folley and Central Line"})
 
 
 @login_required(login_url="login")
@@ -1573,7 +1775,7 @@ def folley_and_central_line(request):
 def angiography_kit(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Angiography Kit",
         "date_form": DateForm(),
     }
@@ -1600,7 +1802,7 @@ def angiography_kit(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'angiography_kit_data':angiography_kit_data, "angiography_kit_column_name":angiography_kit_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Angiography Kit"})
+            # return render(request,'reports/one_for_all.html', {'angiography_kit_data':angiography_kit_data, "angiography_kit_column_name":angiography_kit_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Angiography Kit"})
 
 
 @login_required(login_url="login")
@@ -1615,7 +1817,7 @@ def search_indents_by_code(request):
     context = {
         "dropdown_options": dropdown_options,
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Search Indents By Code",
         "date_form": DateForm(),
     }
@@ -1645,25 +1847,139 @@ def search_indents_by_code(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'search_indents_by_code_data':search_indents_by_code_data, "search_indents_by_code_column_name":search_indents_by_code_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Angiography Kit"})
+            # return render(request,'reports/one_for_all.html', {'search_indents_by_code_data':search_indents_by_code_data, "search_indents_by_code_column_name":search_indents_by_code_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Angiography Kit"})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Midnight Stock Report")
+def midnight_stock_report(request):
+    date_now = get_last_three_dates()
+    dropdown_options = [
+        {
+            "option_value": "midnight_stock",
+            "option_name": f"Midnight Stock of    {date_now[0]}",
+        },
+        {
+            "option_value": "midnight_stock1",
+            "option_name": f"Midnight Stock of    {date_now[1]}",
+        },
+        {
+            "option_value": "midnight_stock2",
+            "option_name": f"Midnight Stock of    {date_now[2]}",
+        },
+    ]
+    context = {
+        "dropdown_options": dropdown_options,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Midnight Stock Report",
+    }
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        midnight_stock_table = request.POST["dropdown_options"]
+        db = Ora()
+        (
+            midnight_stock_report_data,
+            midnight_stock_report_column,
+        ) = db.get_midnight_stock_report(midnight_stock_table)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            column=midnight_stock_report_column,
+            data=midnight_stock_report_data,
+        )
+
+        if not midnight_stock_report_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'midnight_stock_report_data':midnight_stock_report_data, 'user_name':request.user.get_full_name()})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Overall Pharmacy Consumption Report")
+def overall_pharmacy_consumption_report(request):
+
+    context = {
+        "date_template": "date_template",
+        "date_form": DateForm(),
+        "user_name": request.user.get_full_name(),
+        "page_name": "Overall Pharmacy Consumption Report",
+    }
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+        db = Ora()
+
+        (
+            overall_pharmacy_consumption_report_data,
+            overall_pharmacy_consumption_report_column_name,
+        ) = db.get_overall_pharmacy_consumption_report(from_date, to_date)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=overall_pharmacy_consumption_report_data,
+            column=overall_pharmacy_consumption_report_column_name,
+        )
+
+        if not overall_pharmacy_consumption_report_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return (render(request, "reports/one_for_all.html", context),)
+
+        else:
+            del context["date_form"]
+            context["user_name"] = "chutiya"
+            context["excel_file_path"] = excel_file_path
+            request.session["context"] = context
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'overall_pharmacy_consumption_report_data':overall_pharmacy_consumption_report_data, "overall_pharmacy_consumption_report_column_name":overall_pharmacy_consumption_report_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Angiography Kit"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - New Admission Dispense Report")
 def new_admission_dispense_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values()
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "date_template": "date_template",
+        "date_form": DateForm(),
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "New Admission Dispense Report",
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
         (
             new_admission_dispense_report_data,
             column_name,
-        ) = db.get_new_admission_dispense_report()
+        ) = db.get_new_admission_dispense_report(from_date, to_date, facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=new_admission_dispense_report_data,
@@ -1677,7 +1993,7 @@ def new_admission_dispense_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'new_admission_dispense_report_data':new_admission_dispense_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'new_admission_dispense_report_data':new_admission_dispense_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -1722,7 +2038,7 @@ def pharmacy_op_sale_report_userwise(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy OP Sale Report Userwise",
         "date_form": DateForm(),
     }
@@ -1762,7 +2078,7 @@ def pharmacy_op_sale_report_userwise(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_op_sale_report_userwise_value':pharmacy_op_sale_report_userwise_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_op_sale_report_userwise_value':pharmacy_op_sale_report_userwise_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1782,7 +2098,7 @@ def pharmacy_consumption_report(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy Consumption Report",
         "date_form": DateForm(),
     }
@@ -1818,7 +2134,7 @@ def pharmacy_consumption_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pharmacy_consumption_report_value':pharmacy_consumption_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pharmacy_consumption_report_value':pharmacy_consumption_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -1838,7 +2154,7 @@ def food_drug_interaction_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Food-Drug Interaction Report",
         "date_form": DateForm(),
     }
@@ -1876,7 +2192,7 @@ def food_drug_interaction_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'food_drug_interaction_report_value':food_drug_interaction_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'food_drug_interaction_report_value':food_drug_interaction_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -1893,7 +2209,7 @@ def intransite_stock(request):
 
     context = {
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransite Stock",
     }
     if request.method == "GET":
@@ -1917,7 +2233,7 @@ def intransite_stock(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransite_stock_data':intransite_stock_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'intransite_stock_data':intransite_stock_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -1959,7 +2275,7 @@ def grn_data(request):
         "facilities": facility,
         "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "GRN Data",
         "date_form": DateForm(),
         "dropdown_options": dropdown_options,
@@ -1994,7 +2310,7 @@ def grn_data(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'grn_data_value':grn_data_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'grn_data_value':grn_data_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2002,7 +2318,7 @@ def grn_data(request):
 def drug_duplication_override_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Drug Duplication Override Report",
         "date_form": DateForm(),
     }
@@ -2033,7 +2349,7 @@ def drug_duplication_override_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'drug_duplication_override_report_value':drug_duplication_override_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'drug_duplication_override_report_value':drug_duplication_override_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2041,7 +2357,7 @@ def drug_duplication_override_report(request):
 def drug_interaction_override_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Drug Interaction Override Report",
         "date_form": DateForm(),
     }
@@ -2073,7 +2389,7 @@ def drug_interaction_override_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'drug_interaction_override_report_value':drug_interaction_override_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'drug_interaction_override_report_value':drug_interaction_override_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2081,7 +2397,7 @@ def drug_interaction_override_report(request):
 def sale_consumption_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Sale Consumption Report",
         "date_form": DateForm(),
     }
@@ -2111,16 +2427,16 @@ def sale_consumption_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'sale_consumption_report_value':sale_consumption_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'sale_consumption_report_value':sale_consumption_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Sale Consumption Report 1")
 def sale_consumption_report1(request):
-    input_tags = {"Month", "Year"}
+    input_tags = ["Month", "Year"]
     context = {
         "input_tags": input_tags,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Sale Consumption Report 1",
     }
     if request.method == "GET":
@@ -2153,7 +2469,7 @@ def sale_consumption_report1(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'sale_consumption_report1_value':sale_consumption_report1_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'sale_consumption_report1_value':sale_consumption_report1_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2161,7 +2477,7 @@ def sale_consumption_report1(request):
 def new_code_creation(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "New Code Creation",
         "date_form": DateForm(),
     }
@@ -2191,7 +2507,7 @@ def new_code_creation(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {"date_form": DateForm(),'new_code_creation_data':new_code_creation_data,"new_code_creation_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
+            # return render(request,'reports/one_for_all.html', {"date_form": DateForm(),'new_code_creation_data':new_code_creation_data,"new_code_creation_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.get_full_name(),"page_name" : "Predischarge Initiate"})
 
 
 @login_required(login_url="login")
@@ -2199,7 +2515,7 @@ def new_code_creation(request):
 def tvd_cabg_request(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TVD CABG Request",
         "date_form": DateForm(),
     }
@@ -2229,7 +2545,7 @@ def tvd_cabg_request(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {"date_form": DateForm(),'tvd_cabg_request_data':tvd_cabg_request_data,"tvd_cabg_request_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
+            # return render(request,'reports/one_for_all.html', {"date_form": DateForm(),'tvd_cabg_request_data':tvd_cabg_request_data,"tvd_cabg_request_data_column_name":new_code_creation_data_column_name, 'user_name':request.user.get_full_name(),"page_name" : "Predischarge Initiate"})
 
 
 @login_required(login_url="login")
@@ -2244,11 +2560,11 @@ def stock_amount_wise(request):
             {"option_value": data[0], "option_name": f"{data[2]} - {data[1]}"}
         )
 
-    input_tags = {"From Amount", "To Amount"}
+    input_tags = ["From Amount", "To Amount"]
 
     context = {
         "input_tags": input_tags,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Stock Amount-Wise",
         "date_form": DateForm(),
         "dropdown_options": dropdown_options,
@@ -2282,7 +2598,7 @@ def stock_amount_wise(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'stock_amount_wise_data':stock_amount_wise_data, "stock_amount_wise_column_name":stock_amount_wise_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Pharmacy - Intransites Acknowledgement Pending ISS RT"})
+            # return render(request,'reports/one_for_all.html', {'stock_amount_wise_data':stock_amount_wise_data, "stock_amount_wise_column_name":stock_amount_wise_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Pharmacy - Intransites Acknowledgement Pending ISS RT"})
 
 
 @login_required(login_url="login")
@@ -2290,7 +2606,7 @@ def stock_amount_wise(request):
 def dept_issue_pending_tracker(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Dept Issue Pending Tracker",
         "date_form": DateForm(),
     }
@@ -2320,7 +2636,7 @@ def dept_issue_pending_tracker(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'dept_issue_pending_tracker_data':dept_issue_pending_tracker_data, "dept_issue_pending_tracker_column_name":dept_issue_pending_tracker_column_name,'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'dept_issue_pending_tracker_data':dept_issue_pending_tracker_data, "dept_issue_pending_tracker_column_name":dept_issue_pending_tracker_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2340,7 +2656,7 @@ def patient_indent_count(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Patient Indent Count",
         "date_form": DateForm(),
     }
@@ -2371,7 +2687,7 @@ def patient_indent_count(request):
 
         if not patient_indent_count_value:
             context["error"] = "Sorry!!! No Data Found"
-            return render(request, context)
+            return render(request, "reports/one_for_all.html", context)
 
         else:
             return FileResponse(
@@ -2381,11 +2697,68 @@ def patient_indent_count(request):
 
 
 @login_required(login_url="login")
+@allowed_users("Pharmacy - ETO Item Report")
+def eto_item_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "ETO Item Report",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        eto_item_report_value, column_name = db.get_eto_item_report(
+            facility_code, from_date, to_date
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=eto_item_report_value,
+            column=column_name,
+        )
+
+        if not eto_item_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'eto_item_report_
+
+
+@login_required(login_url="login")
 @allowed_users("Pharmacy - Predischarge Medication")
 def predischarge_medication(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Predischarge Medication",
         "date_form": DateForm(),
     }
@@ -2414,14 +2787,14 @@ def predischarge_medication(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'predischarge_medication_data':predischarge_medication_data, "predischarge_medication_column_name":predischarge_medication_column_name,'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'predischarge_medication_data':predischarge_medication_data, "predischarge_medication_column_name":predischarge_medication_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Predischarge Initiate")
 def predischarge_initiate(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Predischarge Initiate",
     }
     if request.method == "GET":
@@ -2447,7 +2820,7 @@ def predischarge_initiate(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'predischarge_initiate_data':predischarge_initiate_data,"predischarge_initiate_data_column_name":predischarge_initiate_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
+            # return render(request,'reports/one_for_all.html', {'predischarge_initiate_data':predischarge_initiate_data,"predischarge_initiate_data_column_name":predischarge_initiate_data_column_name, 'user_name':request.user.get_full_name(),"page_name" : "Predischarge Initiate"})
 
 
 @login_required(login_url="login")
@@ -2455,7 +2828,7 @@ def predischarge_initiate(request):
 def intransites_unf_sal_ret(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Unf Sal Ret",
         "date_form": DateForm(),
     }
@@ -2484,7 +2857,7 @@ def intransites_unf_sal_ret(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_unf_sal_ret_data':intransites_unf_sal_ret_data, "intransites_unf_sal_ret_column_name":intransites_unf_sal_ret_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Intransites Unf Sal Ret"})
+            # return render(request,'reports/one_for_all.html', {'intransites_unf_sal_ret_data':intransites_unf_sal_ret_data, "intransites_unf_sal_ret_column_name":intransites_unf_sal_ret_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Intransites Unf Sal Ret"})
 
 
 @login_required(login_url="login")
@@ -2492,7 +2865,7 @@ def intransites_unf_sal_ret(request):
 def intransites_unf_stk_tfr(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Unf Stk Tfr",
         "date_form": DateForm(),
     }
@@ -2521,27 +2894,42 @@ def intransites_unf_stk_tfr(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_unf_stk_tfr_data':intransites_unf_stk_tfr_data, "intransites_unf_stk_tfr_column_name":intransites_unf_stk_tfr_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Intransites Unf Stk Tfr"})
+            # return render(request,'reports/one_for_all.html', {'intransites_unf_stk_tfr_data':intransites_unf_stk_tfr_data, "intransites_unf_stk_tfr_column_name":intransites_unf_stk_tfr_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Intransites Unf Stk Tfr"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Intransites Acknowledgement Pending ISS")
 def intransites_acknowledgement_pending_iss(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "date_template": "date_template",
-        "user_name": request.user.username,
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "Intransites Acknowledgement Pending ISS",
-        "date_form": DateForm(),
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
         (
             intransites_acknowledgement_pending_iss_data,
             intransites_acknowledgement_pending_iss_column_name,
-        ) = db.get_intransites_acknowledgement_pending_iss()
+        ) = db.get_intransites_acknowledgement_pending_iss(facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=intransites_acknowledgement_pending_iss_data,
@@ -2556,14 +2944,14 @@ def intransites_acknowledgement_pending_iss(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_acknowledgement_pending_iss_data':intransites_acknowledgement_pending_iss_data, "intransites_acknowledgement_pending_iss_column_name":intransites_acknowledgement_pending_iss_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Intransites Acknowledgement Pending ISS"})
+            # return render(request,'reports/one_for_all.html', {'intransites_acknowledgement_pending_iss_data':intransites_acknowledgement_pending_iss_data, "intransites_acknowledgement_pending_iss_column_name":intransites_acknowledgement_pending_iss_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Intransites Acknowledgement Pending ISS"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Intransites Acknowledgement Pending ISS RT")
 def intransites_acknowledgement_pending_iss_rt(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pharmacy - Intransites Acknowledgement Pending ISS RT",
     }
     if request.method == "GET":
@@ -2593,14 +2981,14 @@ def intransites_acknowledgement_pending_iss_rt(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'intransites_acknowledgement_pending_iss_rt_data':intransites_acknowledgement_pending_iss_rt_data, "intransites_acknowledgement_pending_iss_rt_column_name":intransites_acknowledgement_pending_iss_rt_column_name,'user_name':request.user.username,'date_form' : DateForm(), "page_name" : "Pharmacy - Intransites Acknowledgement Pending ISS RT"})
+            # return render(request,'reports/one_for_all.html', {'intransites_acknowledgement_pending_iss_rt_data':intransites_acknowledgement_pending_iss_rt_data, "intransites_acknowledgement_pending_iss_rt_column_name":intransites_acknowledgement_pending_iss_rt_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Pharmacy - Intransites Acknowledgement Pending ISS RT"})
 
 
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Narcotic Stock Report")
 def narcotic_stock_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Narcotic Stock Report",
     }
     if request.method == "GET":
@@ -2626,7 +3014,57 @@ def narcotic_stock_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'narcotic_stock_report_data':narcotic_stock_report_data,"narcotic_stock_report_data_column_name":narcotic_stock_report_data_column_name, 'user_name':request.user.username,"page_name" : "Predischarge Initiate"})
+            # return render(request,'reports/one_for_all.html', {'narcotic_stock_report_data':narcotic_stock_report_data,"narcotic_stock_report_data_column_name":narcotic_stock_report_data_column_name, 'user_name':request.user.get_full_name(),"page_name" : "Predischarge Initiate"})
+
+
+@login_required(login_url="login")
+@allowed_users("Pharmacy - Schedule Item IV And Consumables")
+def schedule_item_iv_and_consumables(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "Schedule Item IV And Consumables",
+    }
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+        db = Ora()
+        (
+            schedule_item_iv_and_consumables_data,
+            schedule_item_iv_and_consumables_column_name,
+        ) = db.get_schedule_item_iv_and_consumables(facility_code)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=schedule_item_iv_and_consumables_data,
+            column=schedule_item_iv_and_consumables_column_name,
+        )
+
+        if not schedule_item_iv_and_consumables_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'schedule_item_iv_and_consumables_data':schedule_item_iv_and_consumables_data, "schedule_item_iv_and_consumables_column_name":schedule_item_iv_and_consumables_column_name,'user_name':request.user.get_full_name(),'date_form' : DateForm(), "page_name" : "Intransites Acknowledgement Pending ISS"})
 
 
 # Finance Reports
@@ -2649,7 +3087,7 @@ def credit_outstanding_bill(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Credit Outstanding Bill",
         "date_form": DateForm(),
     }
@@ -2687,7 +3125,7 @@ def credit_outstanding_bill(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'credit_outstanding_bill_value':credit_outstanding_bill_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'credit_outstanding_bill_value':credit_outstanding_bill_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -2707,7 +3145,7 @@ def tpa_letter(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TPA Letter",
         "date_form": DateForm(),
     }
@@ -2742,7 +3180,7 @@ def tpa_letter(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'tpa_letter_value':tpa_letter_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'tpa_letter_value':tpa_letter_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -2750,7 +3188,7 @@ def tpa_letter(request):
 def online_consultation_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Online Consultation Report",
         "date_form": DateForm(),
     }
@@ -2781,7 +3219,7 @@ def online_consultation_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'online_consultation_report_value':online_consultation_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'online_consultation_report_value':online_consultation_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -2800,7 +3238,7 @@ def contract_report(request):
     context = {
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Contract Reports",
     }
 
@@ -2830,15 +3268,27 @@ def contract_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'contract_report_data':contract_report_data, 'user_name':request.user.username,'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'contract_report_data':contract_report_data, 'user_name':request.user.get_full_name(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - Admission Census")
 def admission_census(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Admission Census",
         "date_form": DateForm(),
     }
@@ -2847,13 +3297,19 @@ def admission_census(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
         admission_census_value, column_name = db.get_admission_census(
-            from_date, to_date
+            from_date, to_date, facility_code
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -2868,7 +3324,7 @@ def admission_census(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'admission_census_value':admission_census_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'admission_census_value':admission_census_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -2888,7 +3344,7 @@ def card(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Card",
         "date_form": DateForm(),
     }
@@ -2921,7 +3377,7 @@ def card(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'card_value':card_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'card_value':card_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -2960,12 +3416,14 @@ def patientwise_bill_details(request):
                 "facility_code": get_fac.facility_code,
             },
         ]
-    textbox = {"UHID", "Episode ID"}
+    textbox = ["UHID", "Episode ID"]
+    input_tags = ["From Date", "To Date"]
     context = {
+        "input_tags": input_tags,
         "textbox": textbox,
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Patient-Wise Bill Details",
         "dropdown_options": dropdown_options,
     }
@@ -2974,6 +3432,15 @@ def patientwise_bill_details(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+
+        try:
+            from_date = request.POST["From"]
+            to_date = request.POST["To"]
+
+        except:
+            from_date = None
+            to_date = None
+
         try:
             facility_code = request.POST["facility_dropdown"]
             episode_code = request.POST["dropdown_options"]
@@ -2994,7 +3461,7 @@ def patientwise_bill_details(request):
 
         db = Ora()
         (patientwise_bill_details_data, column_name,) = db.get_patientwise_bill_details(
-            uhid, episode_id, facility_code, episode_code
+            uhid, episode_id, facility_code, episode_code, from_date, to_date
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -3010,7 +3477,58 @@ def patientwise_bill_details(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'patientwise_bill_details_data':patientwise_bill_details_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'patientwise_bill_details_data':patientwise_bill_details_data, 'user_name':request.user.get_full_name()})
+
+
+@login_required(login_url="login")
+@allowed_users("Finance - PD Report")
+def pd_report(request):
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+
+    context = {
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "PD Report",
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        pd_report_data, column_name = db.get_pd_report(facility_code)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=pd_report_data,
+            column=column_name,
+        )
+
+        if not pd_report_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'pd_report_data':pd_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -3030,7 +3548,7 @@ def package_contract_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Package Contract Report",
         "date_form": DateForm(),
     }
@@ -3067,7 +3585,7 @@ def package_contract_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'package_contract_report_value':package_contract_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'package_contract_report_value':package_contract_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3087,7 +3605,7 @@ def credit_card_reconciliation_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Credit Card Reconciliation Report",
         "date_form": DateForm(),
     }
@@ -3125,7 +3643,7 @@ def credit_card_reconciliation_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'credit_card_reconciliation_report_value':credit_card_reconciliation_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'credit_card_reconciliation_report_value':credit_card_reconciliation_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3145,7 +3663,7 @@ def covid_ot_surgery_details(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Covid OT Surgery Details",
         "date_form": DateForm(),
     }
@@ -3182,22 +3700,41 @@ def covid_ot_surgery_details(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_ot_surgery_details_value':covid_ot_surgery_details_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'covid_ot_surgery_details_value':covid_ot_surgery_details_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - GST Data of Pharmacy")
 def gst_data_of_pharmacy(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "GST Data of Pharmacy",
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
-        gst_data_of_pharmacy_data, column_name = db.get_gst_data_of_pharmacy()
+        gst_data_of_pharmacy_data, column_name = db.get_gst_data_of_pharmacy(
+            facility_code
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=gst_data_of_pharmacy_data,
@@ -3212,15 +3749,28 @@ def gst_data_of_pharmacy(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gst_data_of_pharmacy_data':gst_data_of_pharmacy_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'gst_data_of_pharmacy_data':gst_data_of_pharmacy_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - Cathlab")
 def cathlab(request):
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Cathlab",
         "date_form": DateForm(),
     }
@@ -3229,12 +3779,17 @@ def cathlab(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
-        cathlab_value, column_name = db.get_cathlab(from_date, to_date)
+        cathlab_value, column_name = db.get_cathlab(from_date, to_date, facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=cathlab_value,
@@ -3249,7 +3804,7 @@ def cathlab(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'cathlab_value':cathlab_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'cathlab_value':cathlab_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -3270,7 +3825,7 @@ def form_61(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Form 61",
         "date_form": DateForm(),
     }
@@ -3308,7 +3863,7 @@ def form_61(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'form_61_value':form_61_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'form_61_value':form_61_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3329,7 +3884,7 @@ def packages_applied_to_patients(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Packages Applied To Patients",
         "date_form": DateForm(),
     }
@@ -3370,25 +3925,42 @@ def packages_applied_to_patients(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'packages_applied_to_patients_value':packages_applied_to_patients_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'packages_applied_to_patients_value':packages_applied_to_patients_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - GST Data of Pharmacy Return")
 def gst_data_of_pharmacy_return(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "GST Data of Pharmacy Return",
     }
     if request.method == "GET":
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
         (
             gst_data_of_pharmacy_return_data,
             column_name,
-        ) = db.get_gst_data_of_pharmacy_return()
+        ) = db.get_gst_data_of_pharmacy_return(facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=gst_data_of_pharmacy_return_data,
@@ -3403,14 +3975,14 @@ def gst_data_of_pharmacy_return(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gst_data_of_pharmacy_return_data':gst_data_of_pharmacy_return_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'gst_data_of_pharmacy_return_data':gst_data_of_pharmacy_return_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - GST Data of IP")
 def gst_data_of_ip(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "GST Data of IP",
     }
     if request.method == "GET":
@@ -3432,14 +4004,14 @@ def gst_data_of_ip(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gst_data_of_ip_data':gst_data_of_ip_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'gst_data_of_ip_data':gst_data_of_ip_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - GST Data of OP")
 def gst_data_of_op(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "GST Data of OP",
     }
     if request.method == "GET":
@@ -3460,7 +4032,7 @@ def gst_data_of_op(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gst_data_of_op_data':gst_data_of_op_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'gst_data_of_op_data':gst_data_of_op_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -3468,7 +4040,7 @@ def gst_data_of_op(request):
 def ot(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OT",
         "date_form": DateForm(),
     }
@@ -3496,15 +4068,27 @@ def ot(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ot_value':ot_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'ot_value':ot_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - Discharge Census")
 def discharge_census(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge Census",
         "date_form": DateForm(),
     }
@@ -3513,13 +4097,18 @@ def discharge_census(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
         discharge_census_value, column_name = db.get_discharge_census(
-            from_date, to_date
+            from_date, to_date, facility_code
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -3534,14 +4123,27 @@ def discharge_census(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discharge_census_value':discharge_census_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'discharge_census_value':discharge_census_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Finance - GST IPD")
 def gst_ipd(request):
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
-        "user_name": request.user.username,
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
         "page_name": "GST IPD",
     }
 
@@ -3549,9 +4151,13 @@ def gst_ipd(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
-        gst_ipd_value, column_name = db.get_gst_ipd()
+        gst_ipd_value, column_name = db.get_gst_ipd(facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=gst_ipd_value,
@@ -3565,7 +4171,61 @@ def gst_ipd(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/gst_ipd.html', {'gst_ipd_value':gst_ipd_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/gst_ipd.html', {'gst_ipd_value':gst_ipd_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
+
+
+@login_required(login_url="login")
+@allowed_users("Finance - Bed Charges Occupancy")
+def bed_charges_occupancy(request):
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
+        "date_template": "date_template",
+        "user_name": request.user.get_full_name(),
+        "date_form": DateForm(),
+        "page_name": "Bed Charges Occupancy",
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+        db = Ora()
+        bed_charges_occupancy_value, column_name = db.get_bed_charges_occupancy(
+            from_date, to_date, facility_code
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=bed_charges_occupancy_value,
+            column=column_name,
+        )
+
+        if not bed_charges_occupancy_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/bed_charges_occupancy.html', {'bed_charges_occupancy_value':bed_charges_occupancy_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3587,7 +4247,7 @@ def revenue_data_of_sl(request):
     ]
     context = {
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Revenue Data of SL",
     }
     if request.method == "GET":
@@ -3613,7 +4273,7 @@ def revenue_data_of_sl(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl_data':revenue_data_of_sl_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl_data':revenue_data_of_sl_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -3633,7 +4293,7 @@ def revenue_data_of_sl_with_date(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Revenue Data of SL 3",
         "date_form": DateForm(),
     }
@@ -3656,7 +4316,7 @@ def revenue_data_of_sl_with_date(request):
         (
             revenue_data_of_sl_with_date_value,
             column_name,
-        ) = db.get_revenue_data_of_sl_with_date(facility_code, from_date, to_date)
+        ) = db.get_revenue_data_of_sl_with_date(from_date, to_date, facility_code)
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=revenue_data_of_sl_with_date_value,
@@ -3670,7 +4330,7 @@ def revenue_data_of_sl_with_date(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl_with_date_value':revenue_data_of_sl_with_date_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'revenue_data_of_sl_with_date_value':revenue_data_of_sl_with_date_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3689,9 +4349,13 @@ def revenue_jv(request):
             "option_value": "revenue_data2",
             "option_name": "Revenue Data 2",
         },
+        {
+            "option_value": "rev_data_21",
+            "option_name": "Revenue Data 21",
+        },
     ]
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Revenue JV",
         "dropdown_options": dropdown_options,
     }
@@ -3720,7 +4384,67 @@ def revenue_jv(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'revenue_jv_value':revenue_jv_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'revenue_jv_value':revenue_jv_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
+
+
+@login_required(login_url="login")
+@allowed_users("Finance - Revenue Data With Dates")
+def revenue_data_with_dates(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facility_template": "facility_template",
+        "date_template": "date_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Revenue Data With Dates",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        # Select Function from model
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        revenue_data_with_dates_value, column_name = db.get_revenue_data_with_dates(
+            facility_code, from_date, to_date
+        )
+
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=revenue_data_with_dates_value,
+            column=column_name,
+        )
+
+        if not revenue_data_with_dates_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'revenue_data_with_dates_value':revenue_data_with_dates_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3740,7 +4464,7 @@ def collection_report(request):
         "facility_template": "facility_template",
         "date_template": "date_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Collection Report",
         "date_form": DateForm(),
     }
@@ -3780,7 +4504,170 @@ def collection_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'collection_report_value':collection_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'collection_report_value':collection_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
+
+
+@login_required(login_url="login")
+@allowed_users("Finance - Discount Report EM")
+def discount_report_em(request):
+    dropdown_options = [
+        {
+            "option_value": "('O')",
+            "option_name": "Outpatient",
+        },
+        {
+            "option_value": "('E')",
+            "option_name": "Emergency",
+        },
+        {
+            "option_value": "('R')",
+            "option_name": "External",
+        },
+        {
+            "option_value": "('I')",
+            "option_name": "Inpatient",
+        },
+        {
+            "option_value": ("O", "E", "R", "I"),
+            "option_name": "All",
+        },
+    ]
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Discount Report EM",
+        "dropdown_options": dropdown_options,
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+
+        try:
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+            facility_code = request.POST["facility_dropdown"]
+            episode_code = request.POST["dropdown_options"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        (
+            discount_report_em_data,
+            column_name,
+        ) = db.get_discount_report_em(from_date, to_date, episode_code, facility_code)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=discount_report_em_data,
+            column=column_name,
+        )
+
+        if not discount_report_em_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'discount_report_em_data':discount_report_em_data, 'user_name':request.user.get_full_name()})
+
+
+@login_required(login_url="login")
+@allowed_users("Finance - Total Bills For Period")
+def total_bills_for_period(request):
+    dropdown_options = [
+        {
+            "option_value": "('O')",
+            "option_name": "Outpatient",
+        },
+        {
+            "option_value": "('E')",
+            "option_name": "Emergency",
+        },
+        {
+            "option_value": "('R')",
+            "option_name": "External",
+        },
+        {
+            "option_value": "('I')",
+            "option_name": "Inpatient",
+        },
+        {
+            "option_value": ("O", "E", "R", "I"),
+            "option_name": "All",
+        },
+    ]
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Total Bills For Period",
+        "dropdown_options": dropdown_options,
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+
+        try:
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+            facility_code = request.POST["facility_dropdown"]
+            episode_code = request.POST["dropdown_options"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        (total_bills_for_period_data, column_name,) = db.get_total_bills_for_period(
+            from_date, to_date, episode_code, facility_code
+        )
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=total_bills_for_period_data,
+            column=column_name,
+        )
+
+        if not total_bills_for_period_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'total_bills_for_period_data':total_bills_for_period_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -3788,7 +4675,7 @@ def collection_report(request):
 def pre_discharge_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pre Discharge Report",
         "date_form": DateForm(),
     }
@@ -3819,14 +4706,14 @@ def pre_discharge_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'pre_discharge_report_value':pre_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'pre_discharge_report_value':pre_discharge_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Pre Discharge Report 2")
 def pre_discharge_report_2(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Pre Discharge Report 2",
     }
     if request.method == "GET":
@@ -3849,7 +4736,7 @@ def pre_discharge_report_2(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'pre_discharge_report_2_data':pre_discharge_report_2_data, 'user_name':request.user.username,})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'pre_discharge_report_2_data':pre_discharge_report_2_data, 'user_name':request.user.get_full_name(),})
 
 
 @login_required(login_url="login")
@@ -3857,7 +4744,7 @@ def pre_discharge_report_2(request):
 def discharge_report_2(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge Report 2",
         "date_form": DateForm(),
     }
@@ -3887,7 +4774,7 @@ def discharge_report_2(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discharge_report_2_value':discharge_report_2_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'discharge_report_2_value':discharge_report_2_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -3907,7 +4794,7 @@ def discharge_with_mis_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge With MIS Report",
         "date_form": DateForm(),
     }
@@ -3944,7 +4831,7 @@ def discharge_with_mis_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discharge_with_mis_report_value':discharge_with_mis_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'discharge_with_mis_report_value':discharge_with_mis_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -3964,7 +4851,7 @@ def needle_prick_injury_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Needle Prick Injury Report",
         "date_form": DateForm(),
     }
@@ -4002,7 +4889,7 @@ def needle_prick_injury_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'needle_prick_injury_report_value':needle_prick_injury_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'needle_prick_injury_report_value':needle_prick_injury_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4022,7 +4909,7 @@ def practo_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Practo Report",
         "date_form": DateForm(),
     }
@@ -4057,7 +4944,7 @@ def practo_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'practo_report_value':practo_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'practo_report_value':practo_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4076,7 +4963,7 @@ def unbilled_report(request):
     context = {
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Unbilled Report",
     }
 
@@ -4106,7 +4993,7 @@ def unbilled_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'unbilled_report_data':unbilled_report_data, 'user_name':request.user.username,'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'unbilled_report_data':unbilled_report_data, 'user_name':request.user.get_full_name(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4125,7 +5012,7 @@ def unbilled_deposit_report(request):
     context = {
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Unbilled Deposit Report",
     }
 
@@ -4157,7 +5044,7 @@ def unbilled_deposit_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'unbilled_deposit_report_data':unbilled_deposit_report_data, 'user_name':request.user.username,'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'unbilled_deposit_report_data':unbilled_deposit_report_data, 'user_name':request.user.get_full_name(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4177,7 +5064,7 @@ def contact_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Contact Report",
         "date_form": DateForm(),
     }
@@ -4214,7 +5101,7 @@ def contact_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'contact_report_value':contact_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'contact_report_value':contact_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4222,7 +5109,7 @@ def contact_report(request):
 def current_inpatients_employee_and_dependants(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Current Inpatients Employee and Dependants",
         "date_form": DateForm(),
     }
@@ -4257,14 +5144,14 @@ def current_inpatients_employee_and_dependants(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'current_inpatients_employee_and_dependants_value':current_inpatients_employee_and_dependants_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'current_inpatients_employee_and_dependants_value':current_inpatients_employee_and_dependants_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Treatment Sheet Data")
 def treatment_sheet_data(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Treatment Sheet Data",
     }
     if request.method == "GET":
@@ -4284,14 +5171,17 @@ def treatment_sheet_data(request):
             return render(
                 request,
                 "reports/one_for_all.html",
-                {"error": "Sorry!!! No Data Found", "user_name": request.user.username},
+                {
+                    "error": "Sorry!!! No Data Found",
+                    "user_name": request.user.get_full_name(),
+                },
             )
 
         else:
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'treatment_sheet_data_data':treatment_sheet_data_data, 'user_name':request.user.username,})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'treatment_sheet_data_data':treatment_sheet_data_data, 'user_name':request.user.get_full_name(),})
 
 
 @login_required(login_url="login")
@@ -4311,7 +5201,7 @@ def employees_antibodies_reactive_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Employees Antibodies Reactive Report",
         "date_form": DateForm(),
     }
@@ -4349,14 +5239,14 @@ def employees_antibodies_reactive_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'employees_antibodies_reactive_report_value':employees_antibodies_reactive_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'employees_antibodies_reactive_report_value':employees_antibodies_reactive_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Employee Reactive and Non PCR Report")
 def employees_reactive_and_non_pcr_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Employee Reactive and Non PCR Report",
     }
     if request.method == "GET":
@@ -4382,7 +5272,7 @@ def employees_reactive_and_non_pcr_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'employees_reactive_and_non_pcr_report_value':employees_reactive_and_non_pcr_report_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'employees_reactive_and_non_pcr_report_value':employees_reactive_and_non_pcr_report_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -4402,7 +5292,7 @@ def employee_covid_test_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Employee Covid Test Report",
         "date_form": DateForm(),
         "facilities": facility,
@@ -4441,7 +5331,7 @@ def employee_covid_test_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'employee_covid_test_report_value':employee_covid_test_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'employee_covid_test_report_value':employee_covid_test_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4460,7 +5350,7 @@ def bed_location_report(request):
     context = {
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Bed Location Report",
     }
 
@@ -4491,7 +5381,7 @@ def bed_location_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'bed_location_report_data':bed_location_report_data, 'user_name':request.user.username,'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'bed_location_report_data':bed_location_report_data, 'user_name':request.user.get_full_name(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4511,7 +5401,7 @@ def home_visit_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Home Visit Report",
         "date_form": DateForm(),
     }
@@ -4548,7 +5438,7 @@ def home_visit_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'home_visit_report_value':home_visit_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'home_visit_report_value':home_visit_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4556,7 +5446,7 @@ def home_visit_report(request):
 def cco_billing_count_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "CCO Billing Count Report",
         "date_form": DateForm(),
     }
@@ -4586,7 +5476,7 @@ def cco_billing_count_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'cco_billing_count_report_data':cco_billing_count_report_data,"cco_billing_count_report_column_name":cco_billing_count_report_column_name, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'cco_billing_count_report_data':cco_billing_count_report_data,"cco_billing_count_report_column_name":cco_billing_count_report_column_name, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -4608,7 +5498,7 @@ def total_number_of_online_consultation_by_doctors(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Total Number of Online Consultation by Doctors",
         "date_form": DateForm(),
     }
@@ -4660,14 +5550,14 @@ def total_number_of_online_consultation_by_doctors(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'total_number_of_online_consultation_by_doctors_value':total_number_of_online_consultation_by_doctors_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'total_number_of_online_consultation_by_doctors_value':total_number_of_online_consultation_by_doctors_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - TPA Current Inpatients")
 def tpa_current_inpatients(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TPA Current Inpatients",
     }
     if request.method == "GET":
@@ -4697,7 +5587,7 @@ def tpa_current_inpatients(request):
 def tpa_cover_letter(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TPA Cover Letter",
         "date_form": DateForm(),
     }
@@ -4737,7 +5627,7 @@ def tpa_cover_letter(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -4745,7 +5635,7 @@ def tpa_cover_letter(request):
 def total_number_of_ip_patients_by_doctors(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Total Number of IP Patients by Doctors",
         "date_form": DateForm(),
     }
@@ -4777,7 +5667,7 @@ def total_number_of_ip_patients_by_doctors(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'total_number_of_ip_patients_by_doctors_value':total_number_of_ip_patients_by_doctors_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'total_number_of_ip_patients_by_doctors_value':total_number_of_ip_patients_by_doctors_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -4785,7 +5675,7 @@ def total_number_of_ip_patients_by_doctors(request):
 def total_number_of_op_patients_by_doctors(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Total Number of OP Patients by Doctors",
         "date_form": DateForm(),
     }
@@ -4816,7 +5706,7 @@ def total_number_of_op_patients_by_doctors(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'total_number_of_op_patients_by_doctors_value':total_number_of_op_patients_by_doctors_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'total_number_of_op_patients_by_doctors_value':total_number_of_op_patients_by_doctors_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -4836,7 +5726,7 @@ def opd_changes_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OPD Changes Report",
         "date_form": DateForm(),
     }
@@ -4873,7 +5763,7 @@ def opd_changes_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'opd_changes_report_value':opd_changes_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'opd_changes_report_value':opd_changes_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4893,7 +5783,7 @@ def ehc_conversion_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "EHC Conversion Report",
         "date_form": DateForm(),
     }
@@ -4930,7 +5820,7 @@ def ehc_conversion_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ehc_conversion_report_value':ehc_conversion_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'ehc_conversion_report_value':ehc_conversion_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4950,7 +5840,7 @@ def ehc_package_range_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "EHC Package Range Report",
         "date_form": DateForm(),
     }
@@ -4987,7 +5877,7 @@ def ehc_package_range_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ehc_package_range_report_value':ehc_package_range_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'ehc_package_range_report_value':ehc_package_range_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -4995,7 +5885,7 @@ def ehc_package_range_report(request):
 def error_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Error Report",
         "date_form": DateForm(),
     }
@@ -5021,7 +5911,7 @@ def error_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'error_report_value':error_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'error_report_value':error_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5029,7 +5919,7 @@ def error_report(request):
 def ot_query_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OT Query Report",
         "date_form": DateForm(),
     }
@@ -5058,7 +5948,7 @@ def ot_query_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ot_query_report_value':ot_query_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'ot_query_report_value':ot_query_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5068,7 +5958,7 @@ def outreach_cancer_hospital(request):
     context = {
         "date_template": "date_template",
         "page_name": "Outreach Cancer Hospital",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "date_form": DateForm(),
     }
 
@@ -5098,14 +5988,14 @@ def outreach_cancer_hospital(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,ot_query_report_value':ot_query_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,ot_query_report_value':ot_query_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - GIPSA Report")
 def gipsa_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "GIPSA Report",
     }
     if request.method == "GET":
@@ -5126,7 +6016,7 @@ def gipsa_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gipsa_report_data':gipsa_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'gipsa_report_data':gipsa_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -5136,7 +6026,7 @@ def gipsa_report(request):
 def precision_patient_opd_and_online_consultation_list_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Precision Patient OPD & Online Consultation List Report",
         "date_form": DateForm(),
     }
@@ -5169,7 +6059,7 @@ def precision_patient_opd_and_online_consultation_list_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'precision_patient_opd_and_online_consultation_list_report_value':precision_patient_opd_and_online_consultation_list_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'precision_patient_opd_and_online_consultation_list_report_value':precision_patient_opd_and_online_consultation_list_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5177,7 +6067,7 @@ def precision_patient_opd_and_online_consultation_list_report(request):
 def appointment_details_by_call_center_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Appointment Details By Call Center Report",
         "date_form": DateForm(),
     }
@@ -5208,7 +6098,7 @@ def appointment_details_by_call_center_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'appointment_details_by_call_center_report_value':appointment_details_by_call_center_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'appointment_details_by_call_center_report_value':appointment_details_by_call_center_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5216,7 +6106,7 @@ def appointment_details_by_call_center_report(request):
 def trf_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TRF Report",
         "date_form": DateForm(),
     }
@@ -5242,7 +6132,7 @@ def trf_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'trf_report_value':trf_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'trf_report_value':trf_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5265,7 +6155,7 @@ def current_inpatients_clinical_admin(request):
 
     context = {
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Current Inpatients(Clinical Admin)",
     }
 
@@ -5299,17 +6189,17 @@ def current_inpatients_clinical_admin(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'current_inpatients_clinical_admin_data':current_inpatients_clinical_admin_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'current_inpatients_clinical_admin_data':current_inpatients_clinical_admin_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Check Patient Registration Date")
 def check_patient_registration_date(request):
 
-    input_tags = {"UHID"}
+    input_tags = ["UHID"]
     context = {
         "input_tags": input_tags,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Check Patient Registration Date",
     }
     if request.method == "GET":
@@ -5336,7 +6226,7 @@ def check_patient_registration_date(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'check_patient_registration_date_data':check_patient_registration_date_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'check_patient_registration_date_data':check_patient_registration_date_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -5355,7 +6245,7 @@ def opd_consultation_report_with_address(request):
     context = {
         "date_template": "date_template",
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OPD Consultation Report With Address",
         "date_form": DateForm(),
         "facilities": facility,
@@ -5395,7 +6285,64 @@ def opd_consultation_report_with_address(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'opd_consultation_report_with_address_value':opd_consultation_report_with_address_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'opd_consultation_report_with_address_value':opd_consultation_report_with_address_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users("Clinical Administration - Initial Assessment Indicator")
+def initial_assessment_indicator(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "Initial Assessment Indicator",
+        "date_form": DateForm(),
+        "facilities": facility,
+    }
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        (
+            initial_assessment_indicator_value,
+            column_name,
+        ) = db.get_initial_assessment_indicator(facility_code, from_date, to_date)
+
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=initial_assessment_indicator_value,
+            column=column_name,
+        )
+
+        if not initial_assessment_indicator_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return
 
 
 @login_required(login_url="login")
@@ -5403,7 +6350,7 @@ def opd_consultation_report_with_address(request):
 def patient_registration_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Patient Registration Report",
         "date_form": DateForm(),
     }
@@ -5434,7 +6381,61 @@ def patient_registration_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'patient_registration_report_value':patient_registration_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'patient_registration_report_value':patient_registration_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users(
+    "Clinical Administration - Current Inpatients PAN Card and Form16 Report"
+)
+def current_inpatients_pan_card_and_form16_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Current Inpatients PAN Card and Form16 Report",
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        (
+            current_inpatients_pan_card_and_form16_report_value,
+            column_name,
+        ) = db.get_current_inpatients_pan_card_and_form16_report(facility_code)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=current_inpatients_pan_card_and_form16_report_value,
+            column=column_name,
+        )
+
+        if not current_inpatients_pan_card_and_form16_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'current_inpatients_pan_card_and_form16_report_value':current_inpatients_pan_card_and_form16_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -5454,7 +6455,7 @@ def contract_effective_date_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Contract Effective Date Report",
         "date_form": DateForm(),
     }
@@ -5492,7 +6493,7 @@ def contract_effective_date_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'contract_effective_date_report_value':contract_effective_date_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'contract_effective_date_report_value':contract_effective_date_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -5512,7 +6513,7 @@ def admission_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Admission Reports",
         "date_form": DateForm(),
     }
@@ -5548,14 +6549,14 @@ def admission_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'facilities' : facility,'admission_report_value':admission_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'facilities' : facility,'admission_report_value':admission_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Marketing - Patient Discharge Report")
 def patient_discharge_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Patient Discharge Report",
         "date_form": DateForm(),
         "date_template": "date_template",
@@ -5586,7 +6587,7 @@ def patient_discharge_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'patient_discharge_report_value':patient_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'patient_discharge_report_value':patient_discharge_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5605,7 +6606,7 @@ def corporate_discharge_report(request):
     context = {
         "date_template": "date_template",
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Corporate Discharge Report",
         "date_form": DateForm(),
         "facilities": facility,
@@ -5643,7 +6644,7 @@ def corporate_discharge_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'corporate_discharge_report_value':corporate_discharge_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'corporate_discharge_report_value':corporate_discharge_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5652,7 +6653,7 @@ def corporate_discharge_report_with_customer_code(request):
 
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Corporate Discharge Report With Customer Code",
         "date_form": DateForm(),
     }
@@ -5693,7 +6694,7 @@ def corporate_discharge_report_with_customer_code(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'corporate_discharge_report_with_customer_code_value':corporate_discharge_report_with_customer_code_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'corporate_discharge_report_with_customer_code_value':corporate_discharge_report_with_customer_code_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5701,7 +6702,7 @@ def corporate_discharge_report_with_customer_code(request):
 def credit_letter_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Credit Letter Report",
         "date_form": DateForm(),
     }
@@ -5731,7 +6732,7 @@ def credit_letter_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'credit_letter_report_value':credit_letter_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'credit_letter_report_value':credit_letter_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5739,7 +6740,7 @@ def credit_letter_report(request):
 def corporate_ip_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Corporate IP Report",
         "date_form": DateForm(),
     }
@@ -5769,7 +6770,7 @@ def corporate_ip_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'corporate_ip_report_value':corporate_ip_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'corporate_ip_report_value':corporate_ip_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5788,7 +6789,7 @@ def opd_consultation_report(request):
     context = {
         "date_template": "date_template",
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OPD Consultation Report",
         "date_form": DateForm(),
         "facilities": facility,
@@ -5825,15 +6826,27 @@ def opd_consultation_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'opd_consultation_report_value':opd_consultation_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'opd_consultation_report_value':opd_consultation_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Marketing - Emergency Casualty Report")
 def emergency_casualty_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Emergency Casualty Report",
         "date_form": DateForm(),
     }
@@ -5841,13 +6854,18 @@ def emergency_casualty_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
         db = Ora()
         emergency_casualty_report_value, column_name = db.get_emergency_casualty_report(
-            from_date, to_date
+            from_date, to_date, facility_code
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -5863,13 +6881,13 @@ def emergency_casualty_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'emergency_casualty_report_value':emergency_casualty_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'emergency_casualty_report_value':emergency_casualty_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Marketing - New Registration Report")
 def new_registration_report(request):
-    input_tags = {"City"}
+    input_tags = ["City"]
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -5885,7 +6903,7 @@ def new_registration_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "New Registration Report",
         "date_form": DateForm(),
     }
@@ -5925,7 +6943,7 @@ def new_registration_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'new_registration_report_value':new_registration_report_value, "new_registration_report_column":new_registration_report_column,'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'new_registration_report_value':new_registration_report_value, "new_registration_report_column":new_registration_report_column,'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -5945,7 +6963,7 @@ def hospital_tariff_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Hospital Tariff Report",
         "date_form": DateForm(),
     }
@@ -5982,7 +7000,7 @@ def hospital_tariff_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'hospital_tariff_report_value':hospital_tariff_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'hospital_tariff_report_value':hospital_tariff_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6003,7 +7021,7 @@ def international_patient_report(request):
         "facility_template": "facility_template",
         "date_form": DateForm(),
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "International Patient Report",
     }
     if request.method == "GET":
@@ -6038,7 +7056,7 @@ def international_patient_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'facilities' : facility,'international_patient_report_value':international_patient_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'facilities' : facility,'international_patient_report_value':international_patient_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -6046,7 +7064,7 @@ def international_patient_report(request):
 def tpa_query(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "TPA Query",
         "date_form": DateForm(),
     }
@@ -6072,7 +7090,7 @@ def tpa_query(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'tpa_query_value':tpa_query_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'tpa_query_value':tpa_query_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -6092,7 +7110,7 @@ def new_admission_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "New Admission Report",
         "date_form": DateForm(),
     }
@@ -6127,7 +7145,7 @@ def new_admission_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'new_admission_report_value':new_admission_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'new_admission_report_value':new_admission_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6147,7 +7165,7 @@ def discharge_billing_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge Billing Report",
         "date_form": DateForm(),
     }
@@ -6182,7 +7200,7 @@ def discharge_billing_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discharge_billing_report_value':discharge_billing_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'discharge_billing_report_value':discharge_billing_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -6191,7 +7209,7 @@ def discharge_billing_report(request):
 )
 def discharge_billing_report_without_date_range(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge Billing Report Without Date Range",
     }
     if request.method == "GET":
@@ -6226,14 +7244,14 @@ def discharge_billing_report_without_date_range(request):
             # return FileResponse(
             #     open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             # )
-            # return render(request,'reports/one_for_all.html', {'discharge_billing_report_without_date_range_value':discharge_billing_report_without_date_range_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'discharge_billing_report_without_date_range_value':discharge_billing_report_without_date_range_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Billing - Discharge Billing User")
 def discharge_billing_user(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discharge Billing User",
     }
 
@@ -6257,7 +7275,7 @@ def discharge_billing_user(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discharge_billing_user_value':discharge_billing_user_value, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'discharge_billing_user_value':discharge_billing_user_value, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -6277,7 +7295,7 @@ def discount_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Discount Report",
         "date_form": DateForm(),
     }
@@ -6313,7 +7331,7 @@ def discount_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'discount_report_value':discount_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'discount_report_value':discount_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -6333,7 +7351,7 @@ def refund_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Refund Report",
         "date_form": DateForm(),
     }
@@ -6366,15 +7384,15 @@ def refund_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'refund_report_value':refund_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'refund_report_value':refund_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Billing - Non Medical Equipment Report")
 def non_medical_equipment_report(request):
-    input_tags = {"Episode ID", "UHID"}
+    input_tags = ["UHID", "Episode ID"]
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "input_tags": input_tags,
         "page_name": "Non Medical Equipment Report",
     }
@@ -6404,16 +7422,16 @@ def non_medical_equipment_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {"column_name":column_name,'non_medical_equipment_report_data':non_medical_equipment_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {"column_name":column_name,'non_medical_equipment_report_data':non_medical_equipment_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Billing - Additional Tax On Package Room Rent")
 def additional_tax_on_package_room_rent(request):
-    input_tags = {"Episode ID", "UHID"}
+    input_tags = ["UHID", "Episode ID"]
     context = {
         "input_tags": input_tags,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Additional Tax On Package Room Rent",
     }
 
@@ -6442,7 +7460,7 @@ def additional_tax_on_package_room_rent(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'additional_tax_on_package_room_rent_data':additional_tax_on_package_room_rent_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'additional_tax_on_package_room_rent_data':additional_tax_on_package_room_rent_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -6461,7 +7479,7 @@ def due_deposit_report(request):
     context = {
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Due Deposit Report",
     }
 
@@ -6482,7 +7500,7 @@ def due_deposit_report(request):
             data=due_deposit_report_value,
             column=column_name,
         )
-
+        db.close_connection()
         if not due_deposit_report_value:
             context["error"] = "Sorry!!! No Data Found"
             return render(request, "reports/one_for_all.html", context)
@@ -6491,7 +7509,89 @@ def due_deposit_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'due_deposit_report_value':due_deposit_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'due_deposit_report_value':due_deposit_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
+
+
+@login_required(login_url="login")
+@allowed_users("Miscellaneous Reports - Billing - Transfer AR Report")
+def transfer_ar_report(request):
+    dropdown_options = [
+        {
+            "option_value": "('O')",
+            "option_name": "Outpatient",
+        },
+        {
+            "option_value": "('E')",
+            "option_name": "Emergency",
+        },
+        {
+            "option_value": "('R')",
+            "option_name": "External",
+        },
+        {
+            "option_value": "('I')",
+            "option_name": "Inpatient",
+        },
+        {
+            "option_value": ("O", "E", "R", "I"),
+            "option_name": "All",
+        },
+    ]
+
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Transfer AR Report",
+        "dropdown_options": dropdown_options,
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+
+        try:
+            from_date = date_formater(request.POST["from_date"])
+            to_date = date_formater(request.POST["to_date"])
+            facility_code = request.POST["facility_dropdown"]
+            episode_code = request.POST["dropdown_options"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
+        db = Ora()
+        (
+            transfer_ar_report_data,
+            column_name,
+        ) = db.get_transfer_ar_report(from_date, to_date, episode_code, facility_code)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=transfer_ar_report_data,
+            column=column_name,
+        )
+
+        if not transfer_ar_report_data:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'transfer_ar_report_data':transfer_ar_report_data, 'user_name':request.user.get_full_name()})
 
 
 # Lab
@@ -6514,7 +7614,7 @@ def covid_pcr(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Covid PCR",
         "date_form": DateForm(),
     }
@@ -6549,7 +7649,7 @@ def covid_pcr(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_pcr_value':covid_pcr_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'covid_pcr_value':covid_pcr_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6557,7 +7657,7 @@ def covid_pcr(request):
 def covid_2(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Covid 2",
         "date_form": DateForm(),
     }
@@ -6583,7 +7683,7 @@ def covid_2(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_2_value':covid_2_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'covid_2_value':covid_2_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -6603,7 +7703,7 @@ def covid_antibodies(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Covid Antibodies",
         "date_form": DateForm(),
     }
@@ -6640,7 +7740,7 @@ def covid_antibodies(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_antibodies_value':covid_antibodies_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'covid_antibodies_value':covid_antibodies_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6660,7 +7760,7 @@ def covid_antigen(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Covid Antigen",
         "date_form": DateForm(),
     }
@@ -6695,7 +7795,7 @@ def covid_antigen(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_antigen_value':covid_antigen_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'covid_antigen_value':covid_antigen_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6715,7 +7815,7 @@ def cbnaat_test_data(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "CBNAAT Test Data",
         "date_form": DateForm(),
     }
@@ -6752,7 +7852,7 @@ def cbnaat_test_data(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'cbnaat_test_data_value':cbnaat_test_data_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'cbnaat_test_data_value':cbnaat_test_data_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6800,7 +7900,7 @@ def lab_tat_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "dropdown_options": dropdown_options,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "LAB TAT Report",
         "date_form": DateForm(),
         "facilities": facility,
@@ -6841,17 +7941,17 @@ def lab_tat_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'lab_tat_report_value':lab_tat_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'lab_tat_report_value':lab_tat_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Lab - Histopath Fixation Data")
 def histopath_fixation_data(request):
-    input_tags = {"Category Year"}
+    input_tags = ["Category Year"]
     context = {
         "input_tags": input_tags,
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Histopath Fixation Data",
         "date_form": DateForm(),
     }
@@ -6882,14 +7982,14 @@ def histopath_fixation_data(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'histopath_fixation_data_value':histopath_fixation_data_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'histopath_fixation_data_value':histopath_fixation_data_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Lab - Slide Label Data")
 def slide_label_data(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Slide Label Data",
     }
     if request.method == "GET":
@@ -6912,7 +8012,7 @@ def slide_label_data(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'slide_label_data_data':slide_label_data_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'slide_label_data_data':slide_label_data_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -6932,7 +8032,7 @@ def ehc_operation_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "EHC Operation Report",
         "date_form": DateForm(),
     }
@@ -6969,7 +8069,7 @@ def ehc_operation_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ehc_operation_report_value':ehc_operation_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'ehc_operation_report_value':ehc_operation_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -6989,7 +8089,7 @@ def ehc_operation_report_2(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "EHC Operation Report 2",
         "date_form": DateForm(),
     }
@@ -7026,7 +8126,7 @@ def ehc_operation_report_2(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ehc_operation_report_2_value':ehc_operation_report_2_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'ehc_operation_report_2_value':ehc_operation_report_2_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -7046,7 +8146,7 @@ def oncology_drugs_report(request):
         "date_template": "date_template",
         "facility_template": "facility_template",
         "facilities": facility,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Oncology Drugs Report",
         "date_form": DateForm(),
     }
@@ -7083,7 +8183,7 @@ def oncology_drugs_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'oncology_drugs_report_value':oncology_drugs_report_value, 'user_name':request.user.username,'date_form' : DateForm(),'facilities' : facility})
+            # return render(request,'reports/one_for_all.html', {'oncology_drugs_report_value':oncology_drugs_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
 @login_required(login_url="login")
@@ -7102,7 +8202,7 @@ def radiology_tat_report(request):
     context = {
         "date_template": "date_template",
         "facility_template": "facility_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Radiology TAT Report",
         "date_form": DateForm(),
         "facilities": facility,
@@ -7139,7 +8239,7 @@ def radiology_tat_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'radiology_tat_report_value':radiology_tat_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'radiology_tat_report_value':radiology_tat_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -7147,7 +8247,7 @@ def radiology_tat_report(request):
 def day_care_report(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Day Care Report",
         "date_form": DateForm(),
     }
@@ -7176,14 +8276,14 @@ def day_care_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'day_care_report_value':day_care_report_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'day_care_report_value':day_care_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - OT Scheduling List Report")
 def ot_scheduling_list_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "OT Scheduling List Report",
     }
     if request.method == "GET":
@@ -7206,14 +8306,14 @@ def ot_scheduling_list_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'ot_scheduling_list_report_data':ot_scheduling_list_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'ot_scheduling_list_report_data':ot_scheduling_list_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
 @allowed_users("Miscellaneous Reports - Non Package Covid Patient Report")
 def non_package_covid_patient_report(request):
     context = {
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Non Package Covid Patient Report",
     }
     if request.method == "GET":
@@ -7239,7 +8339,7 @@ def non_package_covid_patient_report(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'non_package_covid_patient_report_data':non_package_covid_patient_report_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'non_package_covid_patient_report_data':non_package_covid_patient_report_data, 'user_name':request.user.get_full_name()})
 
 
 @login_required(login_url="login")
@@ -7247,7 +8347,7 @@ def non_package_covid_patient_report(request):
 def gx_flu_a_flu_b_rsv(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "GX Flu A, Flu B RSV",
         "date_form": DateForm(),
     }
@@ -7278,7 +8378,7 @@ def gx_flu_a_flu_b_rsv(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'gx_flu_a_flu_b_rsv_value':gx_flu_a_flu_b_rsv_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'gx_flu_a_flu_b_rsv_value':gx_flu_a_flu_b_rsv_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -7286,7 +8386,7 @@ def gx_flu_a_flu_b_rsv(request):
 def h1n1_detection_by_pcr(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "H1N1 Detection By PCR",
         "date_form": DateForm(),
     }
@@ -7317,7 +8417,7 @@ def h1n1_detection_by_pcr(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'h1n1_detection_by_pcr_value':h1n1_detection_by_pcr_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'h1n1_detection_by_pcr_value':h1n1_detection_by_pcr_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -7325,7 +8425,7 @@ def h1n1_detection_by_pcr(request):
 def biofire_respiratory(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Biofire Respiratory",
         "date_form": DateForm(),
     }
@@ -7356,7 +8456,7 @@ def biofire_respiratory(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'biofire_respiratory_value':biofire_respiratory_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'biofire_respiratory_value':biofire_respiratory_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -7364,7 +8464,7 @@ def biofire_respiratory(request):
 def covid_19_report_with_pincode_and_ward(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "COVID 19 Report With Pincode And Ward",
         "date_form": DateForm(),
     }
@@ -7396,7 +8496,7 @@ def covid_19_report_with_pincode_and_ward(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'covid_19_report_with_pincode_and_ward_value':covid_19_report_with_pincode_and_ward_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'covid_19_report_with_pincode_and_ward_value':covid_19_report_with_pincode_and_ward_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -7404,7 +8504,7 @@ def covid_19_report_with_pincode_and_ward(request):
 def cbnaat_covid_report_with_pincode(request):
     context = {
         "date_template": "date_template",
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "CBNAAT COVID Report With Pincode",
         "date_form": DateForm(),
     }
@@ -7436,16 +8536,57 @@ def cbnaat_covid_report_with_pincode(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'cbnaat_covid_report_with_pincode_value':cbnaat_covid_report_with_pincode_value, 'user_name':request.user.username,'date_form' : DateForm()})
+            # return render(request,'reports/one_for_all.html', {'cbnaat_covid_report_with_pincode_value':cbnaat_covid_report_with_pincode_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users("Microbiology - Mucormycosis Report")
+def mucormycosis_report(request):
+    context = {
+        "date_template": "date_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "Mucormycosis Report",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        (
+            mucormycosis_report_value,
+            column_name,
+        ) = db.get_mucormycosis_report(from_date, to_date)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=mucormycosis_report_value,
+            column=column_name,
+        )
+
+        if not mucormycosis_report_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'cbnaa
 
 
 # Run Query Directly
 @login_required(login_url="login")
+@allowed_users("Miscellaneous Reports - Run Query Directly")
 def run_query_directly(request):
-    textbox = {"Paste SQL Query here"}
+    textbox = ["Paste SQL Query here"]
     context = {
         "textbox": textbox,
-        "user_name": request.user.username,
+        "user_name": request.user.get_full_name(),
         "page_name": "Run Query Directly",
     }
 
@@ -7455,11 +8596,17 @@ def run_query_directly(request):
     elif request.method == "POST":
 
         sql_query = request.POST["Paste SQL Query here"]
-        db = Ora()
-        (
-            run_query_directly_data,
-            column_name,
-        ) = db.get_run_query_directly(sql_query)
+        try:
+
+            db = Ora()
+            (
+                run_query_directly_data,
+                column_name,
+            ) = db.get_run_query_directly(sql_query)
+        except Exception as e:
+            context["error"] = f"ERROR!!! {e}. Please Check Your SQL Query."
+            return render(request, "reports/one_for_all.html", context)
+
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=run_query_directly_data,
@@ -7474,4 +8621,4 @@ def run_query_directly(request):
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
-            # return render(request,'reports/one_for_all.html', {'run_query_directly_data':run_query_directly_data, 'user_name':request.user.username})
+            # return render(request,'reports/one_for_all.html', {'run_query_directly_data':run_query_directly_data, 'user_name':request.user.get_full_name()})

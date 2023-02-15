@@ -79,6 +79,43 @@ class Ora:
 
         return data, column_name
 
+    # Indore Miscellaneous
+    # Indore Billing
+
+    def get_discharge_billing_report_without_date_range_indore(self):
+
+        discharge_billing_report_without_date_range_indore_query = """
+        
+        
+
+      select a.patient_id,a.encounter_id,initcap(short_name),alternate_id3_num,dis_adv_date_time,a.added_by_id,c.appl_user_name, 
+      b.other_contact_num,d.BED_NUM,e.BLNG_GRP_ID
+      from ip_discharge_advice a,mp_patient_mast b,sm_appl_user_vw c,IP_OPEN_ENCOUNTER d,bl_episode_fin_dtls e
+      where a.dis_adv_status='0' 
+      and a.patient_id = b.patient_id 
+      and a.patient_id = d.patient_id
+      and a.patient_id = e.patient_id
+      and a.encounter_id = d.ENCOUNTER_ID
+      and a.encounter_id = e.ENCOUNTER_ID
+      and a.added_by_id = c.appl_user_id 
+      and c.language_id='en' and a.FACILITY_ID  ='IN' 
+      and not exists (select * from bl_bill_hdr h where h.patient_id=a.patient_id and h.episode_id = a.encounter_id and h.bill_status<>'C')
+      order by dis_adv_date_time 
+        
+        """
+
+        self.cursor.execute(discharge_billing_report_without_date_range_indore_query)
+        discharge_billing_report_without_date_range_indore_data = self.cursor.fetchall()
+
+        column_name = [i[0] for i in self.cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return discharge_billing_report_without_date_range_indore_data, column_name
+
 
 if __name__ == "__main__":
     a = Ora()
