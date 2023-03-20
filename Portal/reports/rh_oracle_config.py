@@ -47,7 +47,6 @@ class Ora:
         self.cursor = self.ora_db.cursor()
 
     def status_update(self):
-
         if self.ora_db:
             return "You have connected to the Database"
 
@@ -59,7 +58,6 @@ class Ora:
     # self.ora_db.close()
 
     def check_users(self, pr_num, passw):
-
         sql_qurey = """
         
 
@@ -81,7 +79,6 @@ class Ora:
         return user_pass
 
     def get_pharmacy_sales_consumption_and_return(self, from_date, to_date):
-
         pharmacy_sales_consumption_and_return = """
             
         SELECT distinct a.ADDED_DATE "Added Date", a.DOC_DATE "Doc Date", a.DOC_NO "Bill No", 
@@ -147,7 +144,6 @@ class Ora:
         return data, column_name
 
     def get_health_checkup(self, from_date, to_date):
-
         health_checkup_qurey = """
             
             
@@ -185,7 +181,6 @@ class Ora:
         return data, column_name
 
     def get_pharmacy_report(self, from_date, to_date):
-
         pharmacy_report_qurey = """
             
             
@@ -218,7 +213,6 @@ class Ora:
         return data, column_name
 
     def get_card_report(self, from_date, to_date):
-
         card_report_qurey = """
             
             
@@ -302,7 +296,6 @@ class Ora:
         return data, column_name
 
     def get_doctor_fee_package(self, from_date, to_date):
-
         doctor_fee_package_qurey = """
             
                 select a.operating_facility_id, a.patient_id, b.patient_name, a.episode_id, a.service_date,blcommonproc.get_blng_class_code_desc(a.blng_class_code,'en') billing_class,
@@ -432,7 +425,6 @@ class Ora:
         return data, column_name
 
     def get_op_pharmacy_gst(self, from_date, to_date):
-
         op_pharmacy_gst_qurey = """
             
         Select a.trx_date,a.trx_status,a.episode_type,a.bill_doc_date,a.bill_doc_type_code, a.bill_doc_num,a.patient_id, a.serv_item_code, a.serv_item_desc, a.item_unit_cost, a.base_rate, a.serv_qty, a.batch_id, a.org_gross_charge_amt, a.org_disc_amt,a.org_net_charge_amt,
@@ -468,7 +460,6 @@ class Ora:
         return data, column_name
 
     def get_vaccine_report(self, from_date, to_date):
-
         vaccine_report_qurey = """
             
                 SELECT a.operating_facility_id, a.trx_status, a.episode_type,a.bill_doc_date, a.bill_doc_type_code, a.bill_doc_num,
@@ -532,7 +523,6 @@ class Ora:
         return data, column_name
 
     def get_admissions_with_address(self, from_date, to_date):
-
         admissions_with_address_qurey = """
                 
                 
@@ -587,7 +577,6 @@ class Ora:
         return data, column_name
 
     def get_admissions_report(self, from_date, to_date, facility_code):
-
         admissions_report_qurey = f"""
 
 
@@ -633,7 +622,6 @@ class Ora:
     def get_admissions_report_with_billing_group(
         self, from_date, to_date, facility_code
     ):
-
         admissions_report_with_billing_group_qurey = f"""
 
 
@@ -681,7 +669,6 @@ class Ora:
         return data, column_name
 
     def get_admissions_referal(self, from_date, to_date):
-
         admissions_referal_qurey = """
                 
                 
@@ -832,7 +819,6 @@ class Ora:
         return data, column_name
 
     def get_patient_notes(self, from_date, to_date):
-
         patient_notes_qurey = """
                     
                     
@@ -869,7 +855,6 @@ class Ora:
         return data, column_name
 
     def get_pharmacy_items_list(self, uhid, episode_id):
-
         pharmacy_items_list_qurey = """
         
         select Patient_id, episode_id,blng_grp_id ,Service_date,serv_qty,serv_item_code,serv_item_desc,batch_id, 
@@ -1015,6 +1000,45 @@ class Ora:
 
         return data, column_name
 
+    def get_ambulance_charges(self, facility_code, from_date, to_date):
+        ambulance_charges_query = f""" 
+
+
+        SELECT   TO_CHAR (a.service_date, 'DD/MM/YY') ser_date,
+         TO_CHAR (a.service_date, 'HH24:MI:SS') ser_time, 
+         a.blng_serv_code serv_code, c.long_desc serv_desc,
+         DECODE (a.episode_type,'I', 'IP','O', 'OP','E', 'Emergency','R', 'Referral','D', 'Daycare') pat_Type,
+         a.patient_id pat_id,a.ENCOUNTER_ID, b.short_name pat_name, a.ORG_GROSS_CHARGE_AMT BASE_RATE,a.ORG_DISC_AMT DISCOUNT,a.ORG_NET_CHARGE_AMT AMOUNT
+         FROM bl_patient_charges_folio a,
+         mp_patient_mast b,
+         bl_blng_serv c
+        WHERE a.operating_facility_id in {facility_code}
+            AND a.patient_id = b.patient_id
+            AND a.blng_serv_code = c.blng_serv_code
+            and episode_type = 'I'
+            AND a.service_date between  :from_date AND  TO_DATE (:to_date)+1
+            and a.TRX_STATUS is null
+            and a.BLNG_SERV_CODE like 'HSAM%'    
+        order by a.service_date
+
+
+
+"""
+        self.cursor.execute(
+            ambulance_charges_query,
+            [from_date, to_date],
+        )
+        data = self.cursor.fetchall()
+
+        column_name = [i[0] for i in self.cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data, column_name
+
     # marketing
 
     def get_rh_admission_report_2(self, facility_code, from_date, to_date):
@@ -1061,7 +1085,6 @@ class Ora:
     # RH Miscellaneous Reports
     # RH Labs
     def get_phlebotomy_collection_report(self, from_date, to_date):
-
         phlebotomy_collection_report_qurey = """
                     
                     
@@ -1104,7 +1127,6 @@ class Ora:
     # RH Food and Beverages
 
     def get_f_and_b_order_report(self, from_date, to_date):
-
         f_and_b_order_report_qurey = """
                     
                     

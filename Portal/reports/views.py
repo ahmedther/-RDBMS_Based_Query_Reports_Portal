@@ -30,7 +30,6 @@ def signupuser(request):
     if request.method == "GET":
         return render(request, "reports/signupuser.html", context)
     else:
-
         facility_code = input_validator(
             request=request,
             context=context,
@@ -75,9 +74,7 @@ def signupuser(request):
             return render(request, "reports/signupuser.html", context)
 
         if request.POST["password1"] == request.POST["password2"]:
-
             try:
-
                 user = User.objects.create_user(
                     request.POST["username"],
                     password=request.POST["password1"],
@@ -116,12 +113,10 @@ def signupuser(request):
 
 @unauthenticated_user
 def login_page(request):
-
     if request.method == "GET":
         return render(request, "reports/login_page.html")
 
     else:
-
         user = authenticate(
             request,
             username=request.POST["username"],
@@ -146,7 +141,6 @@ def login_page(request):
 
 @login_required(login_url="login")
 def logoutuser(request):
-
     if request.method == "POST":
         logout(request)
         return redirect("login")
@@ -154,7 +148,6 @@ def logoutuser(request):
 
 @login_required(login_url="login")
 def landing_page(request):
-
     if request.method == "GET":
         return render(
             request, "reports/index.html", {"user_name": request.user.get_full_name()}
@@ -231,7 +224,6 @@ def stock_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         store_code = request.POST["dropdown_options"]
         db = Ora()
         stock_report, column_name = db.get_stock_reports(store_code)
@@ -293,7 +285,6 @@ def stock_value(request):
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Bin Location OP")
 def bin_location_op(request):
-
     dropdown_options = []
     db = Ora()
     store_data = db.get_store_code_ST_BATCH_SEARCH_LANG_VIEW()
@@ -464,7 +455,6 @@ def pharmacy_op_returns(request):
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Restricted Antimicrobials Consumption Report")
 def restricted_antimicrobials_consumption_report(request):
-
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -579,7 +569,6 @@ def pharmacy_itemwise_sale_report(request):
         "date_form": DateForm(),
     }
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -1511,7 +1500,6 @@ def schedule_h1_drug_report(request):
     }
 
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -1571,7 +1559,6 @@ def pharmacy_ward_return_requests_with_status_report(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -1903,8 +1890,19 @@ def midnight_stock_report(request):
 @login_required(login_url="login")
 @allowed_users("Pharmacy - Overall Pharmacy Consumption Report")
 def overall_pharmacy_consumption_report(request):
-
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "facilities": facility,
+        "facility_template": "facility_template",
         "date_template": "date_template",
         "date_form": DateForm(),
         "user_name": request.user.get_full_name(),
@@ -1916,12 +1914,16 @@ def overall_pharmacy_consumption_report(request):
     elif request.method == "POST":
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
+        facility_code = request.POST["facility_dropdown"]
+
         db = Ora()
 
         (
             overall_pharmacy_consumption_report_data,
             overall_pharmacy_consumption_report_column_name,
-        ) = db.get_overall_pharmacy_consumption_report(from_date, to_date)
+        ) = db.get_overall_pharmacy_consumption_report(
+            from_date, to_date, facility_code
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=overall_pharmacy_consumption_report_data,
@@ -1933,10 +1935,6 @@ def overall_pharmacy_consumption_report(request):
             return (render(request, "reports/one_for_all.html", context),)
 
         else:
-            del context["date_form"]
-            context["user_name"] = "chutiya"
-            context["excel_file_path"] = excel_file_path
-            request.session["context"] = context
             return FileResponse(
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
@@ -2573,7 +2571,6 @@ def stock_amount_wise(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         from_amount = request.POST["From"]
         to_amount = request.POST["To"]
         store_code = request.POST["dropdown_options"]
@@ -3432,7 +3429,6 @@ def patientwise_bill_details(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         try:
             from_date = request.POST["From"]
             to_date = request.POST["To"]
@@ -3460,7 +3456,10 @@ def patientwise_bill_details(request):
             uhid = f"('{uhid[0]}')"
 
         db = Ora()
-        (patientwise_bill_details_data, column_name,) = db.get_patientwise_bill_details(
+        (
+            patientwise_bill_details_data,
+            column_name,
+        ) = db.get_patientwise_bill_details(
             uhid, episode_id, facility_code, episode_code, from_date, to_date
         )
         excel_file_path = excel_generator(
@@ -3483,7 +3482,6 @@ def patientwise_bill_details(request):
 @login_required(login_url="login")
 @allowed_users("Finance - PD Report")
 def pd_report(request):
-
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -3755,7 +3753,6 @@ def gst_data_of_pharmacy(request):
 @login_required(login_url="login")
 @allowed_users("Finance - Cathlab")
 def cathlab(request):
-
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -3831,7 +3828,6 @@ def form_61(request):
     }
 
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -3890,7 +3886,6 @@ def packages_applied_to_patients(request):
     }
 
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -4129,7 +4124,6 @@ def discharge_census(request):
 @login_required(login_url="login")
 @allowed_users("Finance - GST IPD")
 def gst_ipd(request):
-
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -4177,7 +4171,6 @@ def gst_ipd(request):
 @login_required(login_url="login")
 @allowed_users("Finance - Bed Charges Occupancy")
 def bed_charges_occupancy(request):
-
     get_fac = request.user.employee.facility
     if get_fac.facility_name == "ALL":
         facility = FacilityDropdown.objects.values().order_by("facility_name")
@@ -4410,7 +4403,6 @@ def revenue_data_with_dates(request):
     }
 
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -4470,7 +4462,6 @@ def collection_report(request):
     }
 
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -4557,7 +4548,6 @@ def discount_report_em(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         try:
             from_date = date_formater(request.POST["from_date"])
             to_date = date_formater(request.POST["to_date"])
@@ -4639,7 +4629,6 @@ def total_bills_for_period(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         try:
             from_date = date_formater(request.POST["from_date"])
             to_date = date_formater(request.POST["to_date"])
@@ -4650,7 +4639,10 @@ def total_bills_for_period(request):
             return render(request, "reports/one_for_all.html", context)
 
         db = Ora()
-        (total_bills_for_period_data, column_name,) = db.get_total_bills_for_period(
+        (
+            total_bills_for_period_data,
+            column_name,
+        ) = db.get_total_bills_for_period(
             from_date, to_date, episode_code, facility_code
         )
         excel_file_path = excel_generator(
@@ -5917,8 +5909,20 @@ def error_report(request):
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - OT Query Report")
 def ot_query_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
         "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
         "user_name": request.user.get_full_name(),
         "page_name": "OT Query Report",
         "date_form": DateForm(),
@@ -5932,8 +5936,16 @@ def ot_query_report(request):
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
 
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
+
         db = Ora()
-        ot_query_report_value, column_name = db.get_ot_query_report(from_date, to_date)
+        ot_query_report_value, column_name = db.get_ot_query_report(
+            from_date, to_date, facility_code
+        )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
             data=ot_query_report_value,
@@ -5954,7 +5966,6 @@ def ot_query_report(request):
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Outreach Cancer Hospital")
 def outreach_cancer_hospital(request):
-
     context = {
         "date_template": "date_template",
         "page_name": "Outreach Cancer Hospital",
@@ -6195,7 +6206,6 @@ def current_inpatients_clinical_admin(request):
 @login_required(login_url="login")
 @allowed_users("Clinical Administration - Check Patient Registration Date")
 def check_patient_registration_date(request):
-
     input_tags = ["UHID"]
     context = {
         "input_tags": input_tags,
@@ -6555,7 +6565,20 @@ def admission_report(request):
 @login_required(login_url="login")
 @allowed_users("Marketing - Patient Discharge Report")
 def patient_discharge_report(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
     context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
         "user_name": request.user.get_full_name(),
         "page_name": "Patient Discharge Report",
         "date_form": DateForm(),
@@ -6568,10 +6591,14 @@ def patient_discharge_report(request):
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
-
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(request, "reports/one_for_all.html", context)
         db = Ora()
         patient_discharge_report_value, column_name = db.get_patient_discharge_report(
-            from_date, to_date
+            from_date, to_date, facility_code
         )
         excel_file_path = excel_generator(
             page_name=context["page_name"],
@@ -6650,7 +6677,6 @@ def corporate_discharge_report(request):
 @login_required(login_url="login")
 @allowed_users("Marketing - Corporate Discharge Report With Customer Code")
 def corporate_discharge_report_with_customer_code(request):
-
     context = {
         "date_template": "date_template",
         "user_name": request.user.get_full_name(),
@@ -6665,7 +6691,6 @@ def corporate_discharge_report_with_customer_code(request):
         )
 
     elif request.method == "POST":
-
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
@@ -6911,7 +6936,6 @@ def new_registration_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         # Manually format To Date fro Sql Query
         from_date = date_formater(request.POST["from_date"])
         to_date = date_formater(request.POST["to_date"])
@@ -7562,7 +7586,6 @@ def transfer_ar_report(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         try:
             from_date = date_formater(request.POST["from_date"])
             to_date = date_formater(request.POST["to_date"])
@@ -8208,7 +8231,6 @@ def radiology_tat_report(request):
         "facilities": facility,
     }
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -8252,7 +8274,6 @@ def day_care_report(request):
         "date_form": DateForm(),
     }
     if request.method == "GET":
-
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
@@ -8277,6 +8298,45 @@ def day_care_report(request):
                 open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
             )
             # return render(request,'reports/one_for_all.html', {'column_name':column_name,'day_care_report_value':day_care_report_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+@login_required(login_url="login")
+@allowed_users("Miscellaneous Reports - Nurse - OPD Pharmacy Missing Charges")
+def opd_pharmacy_missing_charges(request):
+    context = {
+        "date_template": "date_template",
+        "user_name": request.user.get_full_name(),
+        "page_name": "OPD Pharmacy Missing Charges",
+        "date_form": DateForm(),
+    }
+    if request.method == "GET":
+        return render(request, "reports/one_for_all.html", context)
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        db = Ora()
+        (
+            opd_pharmacy_missing_charges_value,
+            column_name,
+        ) = db.get_opd_pharmacy_missing_charges(from_date, to_date)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=opd_pharmacy_missing_charges_value,
+            column=column_name,
+        )
+
+        if not opd_pharmacy_missing_charges_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(request, "reports/one_for_all.html", context)
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'column_name':column_name,'opd_pharmacy_missing_charges_value':opd_pharmacy_missing_charges_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
 
 
 @login_required(login_url="login")
@@ -8594,10 +8654,8 @@ def run_query_directly(request):
         return render(request, "reports/one_for_all.html", context)
 
     elif request.method == "POST":
-
         sql_query = request.POST["Paste SQL Query here"]
         try:
-
             db = Ora()
             (
                 run_query_directly_data,

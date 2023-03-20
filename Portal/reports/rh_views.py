@@ -591,7 +591,6 @@ def surgery_report(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -686,7 +685,6 @@ def billing_servicewise_transaction(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -819,7 +817,6 @@ def pharmacy_items_list(request):
 @login_required(login_url="login")
 @allowed_users("RH Finance - RH Revenue Report")
 def rh_revenue_report(request):
-
     context = {
         "date_template": "date_template",
         "user_name": request.user.get_full_name(),
@@ -828,7 +825,6 @@ def rh_revenue_report(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -880,7 +876,6 @@ def rh_opd_consultation(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -941,7 +936,6 @@ def ip_referrals(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -990,6 +984,77 @@ def ip_referrals(request):
             # return render(request,'reports/one_for_all.html', {'ip_referrals_value':ip_referrals_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
 
 
+@login_required(login_url="login")
+@allowed_users("RH Clinical Administration - Ambulance Charges")
+def ambulance_charges(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    context = {
+        "date_template": "date_template",
+        "facility_template": "facility_template",
+        "facilities": facility,
+        "user_name": request.user.get_full_name(),
+        "page_name": "Ambulance Charges",
+        "date_form": DateForm(),
+    }
+
+    if request.method == "GET":
+        return render(
+            request,
+            "reports/one_for_all.html",
+            context,
+        )
+
+    elif request.method == "POST":
+        # Manually format To Date fro Sql Query
+        from_date = date_formater(request.POST["from_date"])
+        to_date = date_formater(request.POST["to_date"])
+
+        # Select Function from model
+        try:
+            facility_code = request.POST["facility_dropdown"]
+        except MultiValueDictKeyError:
+            context["error"] = "😒 Please Select a facility from the dropdown list"
+            return render(
+                request,
+                "reports/one_for_all.html",
+                context,
+            )
+
+        db = Ora()
+        (
+            ambulance_charges_value,
+            column_name,
+        ) = db.get_ambulance_charges(facility_code, from_date, to_date)
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=ambulance_charges_value,
+            column=column_name,
+        )
+
+        if not ambulance_charges_value:
+            context["error"] = "Sorry!!! No Data Found"
+            return render(
+                request,
+                "reports/one_for_all.html",
+                context,
+            )
+
+        else:
+            return FileResponse(
+                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+            )
+            # return render(request,'reports/one_for_all.html', {'ambulance_charges_value':ambulance_charges_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})
+
+
 # RH Marketing
 @login_required(login_url="login")
 @allowed_users("RH Marketing - Admission Report 2")
@@ -1014,7 +1079,6 @@ def rh_admission_report_2(request):
     }
 
     if request.method == "GET":
-
         return render(
             request,
             "reports/one_for_all.html",
@@ -1064,6 +1128,7 @@ def rh_admission_report_2(request):
 
 
 # Miscellaneous Reports
+
 
 # RH Labs
 @login_required(login_url="login")

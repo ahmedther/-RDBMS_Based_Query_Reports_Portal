@@ -359,7 +359,7 @@
 
 
                                 {% if microbiology_permission %}
-                                  <h4 class="text-left" style="font-weight:bold;">&#160 Microbiology</h4>
+                                  <h4 class="text-left"  style="font-weight:bold;">&#160 Microbiology</h4>
 
                                   <ul class="list-unstyled">
                                     {% if gx_flu_a_flu_b_rsv_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gx_flu_a_flu_b_rsv' %}>GX Flu A, Flu B RSV</a>{% endif %}
@@ -447,6 +447,10 @@
                                     {% if internal_auditor_permission %} <h4 class="text-left" style="font-weight:bold;">&#160 Internal Auditor</h4>
                                         {% if day_care_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'day_care_report' %}>Day Care Report</a>{% endif %}
                                     {% endif %} <!--  End Internal Auditor If-->
+
+                                    {% if nurse_permission   %} <h4 class="text-left" style="font-weight:bold;">&#160 Nurse</h4>
+                                        {% if opd_pharmacy_missing_charges_permission %}<li><a class="dropdown-item text-wrap" href={% url 'opd_pharmacy_missing_charges' %}>OPD Pharmacy Missing Charges</a>{% endif %}
+                                    {% endif %} 
 
 
                                     {% endif %}<!--  End Miscellaneous If-->

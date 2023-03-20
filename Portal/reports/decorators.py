@@ -16,7 +16,6 @@ def unauthenticated_user(login_page):
 def allowed_users(allowed_roles):
     def decorator(view_func):
         def wrapper_func(request, *args, **kwargs):
-
             try:
                 groups = request.user.groups.get(name=allowed_roles)
 

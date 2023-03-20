@@ -621,6 +621,11 @@ urlpatterns = [
     ),
     path("day_care_report/", views.day_care_report, name="day_care_report"),
     path(
+        "opd_pharmacy_missing_charges/",
+        views.opd_pharmacy_missing_charges,
+        name="opd_pharmacy_missing_charges",
+    ),
+    path(
         "ot_scheduling_list_report/",
         views.ot_scheduling_list_report,
         name="ot_scheduling_list_report",
@@ -775,6 +780,11 @@ rh_urlpatterns = [
         "ip_referrals/",
         rh_views.ip_referrals,
         name="ip_referrals",
+    ),
+    path(
+        "ambulance_charges/",
+        rh_views.ambulance_charges,
+        name="ambulance_charges",
     ),
     # RH Marketing
     path(

@@ -52,7 +52,8 @@
               {% if item_substitution_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'item_substitution_report' %}>Item Substitution Report</a>{% endif %}
                 {% if current_inpatients_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'current_inpatients_report' %}>Current Inpatients Reports</a>{% endif %}
                   {% if pharmacy_ward_return_requests_with_status_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'pharmacy_ward_return_requests_with_status_report' %}>Pharmacy Ward Return Requests with Status Report</a>{% endif %}
-      
+                    {% if overall_pharmacy_consumption_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'overall_pharmacy_consumption_report' %}>Overall Pharmacy Consumption Report</a>{% endif %}
+                    
           </ul>
         </div>  <!-- col-megamenu.// -->
       </div>
@@ -143,6 +144,56 @@
 
 <!-- End Finance If.// -->
 
+
+{% if indore_clinical_administration_permission %}
+<li class="nav-item dropdown has-megamenu">
+  <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Clinical Administration</a>
+  <div class="dropdown-menu megamenu" role="menu">
+    <div class="row g-3">
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+
+          <!-- <h6 class="title">Title Menu One</h6> -->
+
+          <ul class="list-unstyled">
+            {% if ehc_conversion_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'ehc_conversion_report' %}>EHC Conversion Report</a>{% endif %}
+        </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+
+          <ul class="list-unstyled">
+            {% if ehc_package_range_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'ehc_package_range_report' %}>EHC Package Range Report</a>{% endif %}
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if total_number_of_ip_patients_by_doctors_permission %}<li><a class="dropdown-item text-wrap" href={% url 'total_number_of_ip_patients_by_doctors' %}>Reserved</a>{% endif %}
+            </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="col-megamenu">
+          <!-- <h6 class="title">Title Menu Two</h6> -->
+          <ul class="list-unstyled">
+            {% if gipsa_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'gipsa_report' %}>Reserved</a>{% endif %}
+          </ul>
+        </div>  <!-- col-megamenu.// -->
+      </div><!-- end col-3 -->
+
+    </div><!-- end row -->
+  </div> <!-- dropdown-mega-menu.// -->
+
+</li>
+{% endif %} <!--  End Clinical Administration If -->
+
+
+
 {% if indore_marketing_permission %}
 <li class="nav-item dropdown has-megamenu">
   <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Marketing</a>
@@ -164,7 +215,7 @@
           <!-- <h6 class="title">Title Menu Two</h6> -->
 
           <ul class="list-unstyled">
-            {% if rh_discharge_report_2_permission %} <li><a class="dropdown-item text-wrap" href={% url 'rh_discharge_report_2' %}>Reserved</a></li> {% endif %}
+            {% if opd_consultation_report_permission %}<li><a class="dropdown-item text-wrap" href={% url 'opd_consultation_report' %}>OPD Consultation Report</a>{% endif %}
 
           </ul>
         </div>  <!-- col-megamenu.// -->

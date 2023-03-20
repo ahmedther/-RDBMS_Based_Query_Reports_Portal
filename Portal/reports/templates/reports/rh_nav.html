@@ -206,7 +206,7 @@
         <div class="col-megamenu">
           <!-- <h6 class="title">Title Menu Two</h6> -->
           <ul class="list-unstyled">
-            {% if admissions_with_address_permission %}<li><a class="dropdown-item text-wrap" href={% url 'admissions_with_address' %}>Reserved</a>{% endif %}
+            {% if ambulance_charges_permission %} <li><a class="dropdown-item text-wrap" href={% url 'ambulance_charges' %}>Ambulance Charges</a></li> {% endif %}
     
           </ul>
         </div>  <!-- col-megamenu.// -->

@@ -3,7 +3,6 @@ from django.contrib.auth.models import User, Group
 
 
 class IAACR(models.Model):
-
     drug_name = models.CharField(max_length=255)
     drug_code = models.CharField(max_length=255)
 
@@ -12,7 +11,6 @@ class IAACR(models.Model):
 
 
 class FacilityDropdown(models.Model):
-
     facility_name = models.CharField(max_length=255)
     facility_code = models.CharField(max_length=255)
 
