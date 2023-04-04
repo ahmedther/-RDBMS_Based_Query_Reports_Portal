@@ -1,0 +1,50 @@
+{% extends "reports/base.html" %}
+
+{% block nav %}
+
+{% load custom_templates %}
+
+
+
+                    <li class="nav-item active"> <a class="nav-link" href={% url 'nav' %}>Home</a></a> </li>
+                    
+                    {% if  report_headings %}
+                    {% for report_heading, report_list in report_headings.items %}
+                    <li class="nav-item dropdown has-megamenu">
+                      <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">{{report_heading}} </a>
+                      <div class="dropdown-menu megamenu" role="menu">
+                        <div class="row g-0">
+                          {% for report in report_list %}
+                          <div class="col-lg-3 col-6">
+                            <div class="col-megamenu">
+                              <!-- <h6 class="title">Title Menu One</h6> -->
+                                <ul class="list-unstyled">
+                                  <li><a class="dropdown-item text-wrap" href={% url 'one_for_all' report.id %} >{{ report.report_name.name|split_dash_get_last:'-' }}</a></li> 
+                              </ul>
+                              
+                            </div>  <!-- col-megamenu.// -->
+                          </div><!-- end col-3 -->
+                          {% endfor %}
+                        </div><!-- end row -->
+                      </div> <!-- dropdown-mega-menu.// -->
+                    </li>
+                    {% comment %} {% endif %} {% endcomment %}
+                    <!-- End Pharmacy If.// -->
+                    {% endfor %}
+                    {% endif %}
+
+                                    
+                                </ul>
+                              </div>  <!-- col-megamenu.// -->
+                            </div>
+                        </div>
+                      </div>
+                    </li>
+                    <!-- End Kokilaben Hospital IF Statement.// -->
+
+
+
+                    
+
+
+{% endblock %}

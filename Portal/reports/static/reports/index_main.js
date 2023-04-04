@@ -290,20 +290,20 @@
 })();
 
 
-document.addEventListener('click', e => {
-  const isDropDownButton = e.target.matches('[data-dropdown-button]')
-  if (!isDropDownButton && e.target.closest('[data-dropdown]') != null) return
+// document.addEventListener('click', e => {
+//   const isDropDownButton = e.target.matches('[data-dropdown-button]')
+//   if (!isDropDownButton && e.target.closest('[data-dropdown]') != null) return
 
 
-  let currentDropdown
-  if (isDropDownButton) {
-    currentDropdown = e.target.closest('[data-dropdown]')
-    if (!currentDropdown) return
-    currentDropdown.classList.toggle('active')
-  }
+//   let currentDropdown
+//   if (isDropDownButton) {
+//     currentDropdown = e.target.closest('[data-dropdown]')
+//     if (!currentDropdown) return
+//     currentDropdown.classList.toggle('active')
+//   }
 
-  document.querySelectorAll('[data-dropdown].active').forEach(dropdown => {
-    if (dropdown === currentDropdown) return
-    dropdown.classList.remove('active')
-  })
-})
+//   document.querySelectorAll('[data-dropdown].active').forEach(dropdown => {
+//     if (dropdown === currentDropdown) return
+//     dropdown.classList.remove('active')
+//   })
+// })

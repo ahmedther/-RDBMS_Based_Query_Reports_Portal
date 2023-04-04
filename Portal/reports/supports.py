@@ -2,13 +2,16 @@ import pandas as pd
 import os
 import logging
 import xlwings as xw
-
+import platform
 from pathlib import Path
 from django.shortcuts import render
+from django.utils.datastructures import MultiValueDictKeyError
+from django.http import FileResponse
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool
 
 from .oracle_config import Ora
+from reports.models import FacilityDropdown, IAACR
 
 
 def check_user_pass(userid, userpass):
@@ -25,13 +28,15 @@ def check_user_pass(userid, userpass):
 
 
 def date_formater(date):
+    if not date:
+        return None
     date = date.split("-")
     date_year = int(date[0])
     date_month = int(date[1])
     date_day = int(date[2])
     date_format = datetime(date_year, date_month, date_day)
     date = date_format.strftime("%d-%b-%Y")
-    return date
+    return f"'{date}'"
 
 
 def excel_generator(data, column, page_name):
@@ -86,7 +91,6 @@ def excel_generator(data, column, page_name):
 
     # Iterate through each column and set the width == the max length in that column. A padding length of 2 is also added.
     for i, col in enumerate(excel_data.columns):
-
         # find length of column i
         try:
             column_len = excel_data[col].astype(str).str.len().max()
@@ -190,3 +194,226 @@ def get_last_three_dates():
         date_now = datetime.now() - timedelta(days=i)
         dates.append(date_now.strftime(f"%d-%b-%Y"))
     return dates
+
+
+def get_dropdown_options(
+    sql_query, dropdown_option_value, dropdown_option_name1, dropdown_option_name2
+):
+    dropdown_options = []
+    all_dropdown_options = {"ALL": " "}
+    db = Ora()
+    dropdown_data, _ = db.one_for_all(sql_query)
+
+    for data in dropdown_data:
+        dropdown_options.append(
+            {
+                "option_value": f"'{data[dropdown_option_value]}'",
+                "option_name": f"{data[dropdown_option_name1]} - {data[dropdown_option_name2]}",
+            }
+        )
+        all_dropdown_options["ALL"] = (
+            all_dropdown_options["ALL"] + f"'{data[dropdown_option_value]}',"
+        )
+
+    all_dropdown_options["ALL"] = all_dropdown_options["ALL"][:-1]
+
+    dropdown_options.append(
+        {
+            "option_value": all_dropdown_options["ALL"],
+            "option_name": "ALL",
+        }
+    )
+
+    return dropdown_options
+
+
+def get_pharmacy_IAARC():
+    dropdown_options1 = []
+
+    drugs = IAACR.objects.all()
+    for drug in drugs:
+        dropdown_options1.append(
+            {"option_value": drug.drug_code, "option_name": drug.drug_name}
+        )
+    return dropdown_options1
+
+
+def get_custom_dropdowns(options_value: str, options_name: str):
+    dropdown_options2 = []
+    all_dropdown_options = {"ALL": " "}
+    options_value_list = [
+        value.strip() for value in options_value.split(",") if value.strip()
+    ]
+    options_name_list = [
+        name.strip() for name in options_name.split(",") if name.strip()
+    ]
+    for op_val, op_name in zip(options_value_list, options_name_list):
+        # dropdown_options2.append(
+        #     {"option_value": drug.drug_code, "option_name": drug.drug_name}
+        # )
+        dropdown_options2.append(
+            {
+                "option_value": f"{op_val}",
+                "option_name": f"{op_name}",
+            }
+        )
+        all_dropdown_options["ALL"] = all_dropdown_options["ALL"] + f"{op_val},"
+
+    all_dropdown_options["ALL"] = all_dropdown_options["ALL"][:-1]
+
+    dropdown_options2.append(
+        {
+            "option_value": all_dropdown_options["ALL"],
+            "option_name": "ALL",
+        }
+    )
+
+    return dropdown_options2
+
+
+def get_input_tags(input_values):
+    options_value_list = strip_input_vaules(input_values)
+    input_tags = []
+    for values in options_value_list:
+        input_tags.append(values)
+    return input_tags
+
+
+def strip_input_vaules(input_values):
+    options_value_list = [
+        value.strip() for value in input_values.split(",") if value.strip()
+    ]
+    return options_value_list
+
+
+def get_facility_dropdown(request):
+    get_fac = request.user.employee.facility
+    if get_fac.facility_name == "ALL":
+        facility = FacilityDropdown.objects.values().order_by("facility_name")
+    else:
+        facility = [
+            {
+                "facility_name": get_fac.facility_name,
+                "facility_code": get_fac.facility_code,
+            },
+        ]
+    return facility
+
+
+def sql_query_formater(sql_query: str, request, type=None, other_values=None):
+    variables = {
+        "variable1": request.POST.get("dropdown_options", ""),
+        "variable2": request.POST.get("dropdown_options1", ""),
+        "variable3": request.POST.get("dropdown_options2", ""),
+        "facility_code": request.POST.get("facility_dropdown", ""),
+        "from_date": date_formater(request.POST.get("from_date", "")),
+        "to_date": date_formater(request.POST.get("to_date", "")),
+    }
+
+    if type == "input_tags":
+        input_tag_values = strip_input_vaules(other_values)
+        for inputs in input_tag_values:
+            variables[inputs] = request.POST.get(inputs, "")
+
+    if type == "date_time":
+        variables["from_date"] += " " + request.POST.get("from_time", "")
+        variables["to_date"] += " " + request.POST.get("to_time", "")
+
+    # Remove empty or None values
+    variables = {k: v for k, v in variables.items() if v}
+    return sql_query, variables
+
+
+def special_case_handler(request, sql_query, context):
+    if sql_query.split(",")[-1] == "patient_wise_bill_details":
+        patient_wise_bill_details(request, context)
+
+    if sql_query.split(",")[-1] == "tpa_cover_letter":
+        tpa_cover_letter(request, context)
+
+
+def patient_wise_bill_details(request, context):
+    try:
+        from_date = request.POST["From_Date"]
+        to_date = request.POST["To_Date"]
+
+    except:
+        from_date = None
+        to_date = None
+
+    try:
+        facility_code = request.POST["facility_dropdown"]
+        episode_code = request.POST["dropdown_options2"]
+    except MultiValueDictKeyError:
+        context["error"] = "😒 Please Select a facility from the dropdown list"
+        return render(request, "reports/one_for_all.html", context)
+
+    # Convert and Split all Episode and UHID with commer separated values and then to tuple example : ('KH1000', 'KH1000')
+    episode_id = request.POST["Episode_ID"]
+    episode_id = tuple(episode_id.split())
+    if len(episode_id) == 1:
+        episode_id = f"('{episode_id[0]}')"
+
+    uhid = request.POST["UHID"]
+    uhid = tuple(uhid.split())
+    if len(uhid) == 1:
+        uhid = f"('{uhid[0]}')"
+
+    db = Ora()
+    (
+        patientwise_bill_details_data,
+        column_name,
+    ) = db.get_patientwise_bill_details(
+        uhid, episode_id, facility_code, episode_code, from_date, to_date
+    )
+    excel_file_path = excel_generator(
+        page_name=context["page_name"],
+        data=patientwise_bill_details_data,
+        column=column_name,
+    )
+
+    if not patientwise_bill_details_data:
+        context["error"] = "Sorry!!! No Data Found"
+        return render(request, "reports/one_for_all.html", context)
+
+    else:
+        return FileResponse(
+            open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+        )
+        # return render(request,'reports/one_for_all.html', {'patientwise_bill_details_data':patientwise_bill_details_data, 'user_name':request.user.get_full_name()})
+
+
+def tpa_cover_letter(request, context):
+    # Manually format To Date fro Sql Query
+    from_date = date_formater(request.POST["from_date"])
+    to_date = date_formater(request.POST["to_date"])
+
+    db = Ora()
+    (
+        tpa_cover_letter_value,
+        column_name,
+    ) = db.get_tpa_cover_letter(from_date, to_date)
+    system_os = platform.system()
+
+    if system_os == "Linux":
+        excel_file_path = excel_generator(
+            data=tpa_cover_letter_value,
+            column=column_name,
+            page_name=context["page_name"],
+        )
+    else:
+        excel_file_path = excel_generator_tpa(
+            data=tpa_cover_letter_value,
+            column=column_name,
+            page_name=context["page_name"],
+        )
+
+    if not tpa_cover_letter_value:
+        context["error"] = "Sorry!!! No Data Found"
+        return render(request, "reports/one_for_all.html", context)
+
+    else:
+        return FileResponse(
+            open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+        )
+        # return render(request,'reports/one_for_all.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})

@@ -92,7 +92,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark ">
           <div class="container-fluid">
 
-                <a class="navbar-brand" href={% url 'kh_nav' %}>
+                <a class="navbar-brand" href={% url 'nav' %}>
                   <img src={% static 'reports/logo1.png' %} id="logo" class="d-inline-block align-top"  alt="">
                   KDAH
                 </a>
@@ -104,13 +104,7 @@
             <div class="collapse navbar-collapse" id="main_nav">
               <ul class="navbar-nav">
 
-                {% block kh_nav %}{% endblock %}
-
-                {% block rh_nav %}{% endblock %}
-
-                {% block indore_nav %}{% endblock %}
-
-
+                {% block nav %}{% endblock %}
 
               </ul>   
             </div><!-- collapse navbar-collapse -->

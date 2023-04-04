@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 
-from .models import IAACR, FacilityDropdown, Employee
+from .models import *
 
 
 class EmployeeInline(admin.StackedInline):
@@ -23,6 +23,8 @@ admin.site.register(User, UserAdmin)
 # Register Models
 admin.site.register(IAACR)
 admin.site.register(FacilityDropdown)
+admin.site.register(NavigationHeaders)
+admin.site.register(QueryReports)
 
 
 # CHnage admin Panel

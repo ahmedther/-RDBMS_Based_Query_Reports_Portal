@@ -1,6 +1,7 @@
 from django.shortcuts import redirect, render
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import Group
+from reports.models import QueryReports
 
 
 def unauthenticated_user(login_page):
@@ -9,6 +10,37 @@ def unauthenticated_user(login_page):
             return redirect("landing_page")
         else:
             return login_page(request, *args, **kwargs)
+
+    return wrapper_func
+
+
+def check_if_user_is_auth(view_func):
+    def wrapper_func(request, pk, *args, **kwargs):
+        try:
+            report = QueryReports.objects.get(pk=pk)
+            groups = request.user.groups.filter(name=report.report_name)
+
+        except QueryReports.DoesNotExist:
+            return render(
+                request,
+                "reports/index.html",
+                {
+                    "error": "The requested report does not exist.",
+                    "user_name": request.user.username,
+                },
+            )
+
+        if not groups.exists():
+            return render(
+                request,
+                "reports/index.html",
+                {
+                    "error": "You are not authorized to access this report. Please contact your administrator.",
+                    "user_name": request.user.username,
+                },
+            )
+
+        return view_func(request, pk, *args, **kwargs)
 
     return wrapper_func
 
