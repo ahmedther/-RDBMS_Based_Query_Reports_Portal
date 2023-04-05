@@ -316,8 +316,10 @@ def sql_query_formater(sql_query: str, request, type=None, other_values=None):
             variables[inputs] = request.POST.get(inputs, "")
 
     if type == "date_time":
-        variables["from_date"] += " " + request.POST.get("from_time", "")
-        variables["to_date"] += " " + request.POST.get("to_time", "")
+        from_time = request.POST.get("from_time", "")
+        to_time = request.POST.get("to_time", "")
+        variables["from_date"] = f"'{variables['from_date'][1:-1]} {from_time}'"
+        variables["to_date"] = f"'{variables['to_date'][1:-1]} {to_time}'"
 
     # Remove empty or None values
     variables = {k: v for k, v in variables.items() if v}
@@ -326,10 +328,16 @@ def sql_query_formater(sql_query: str, request, type=None, other_values=None):
 
 def special_case_handler(request, sql_query, context):
     if sql_query.split(",")[-1] == "patient_wise_bill_details":
-        patient_wise_bill_details(request, context)
+        excel_file_path = patient_wise_bill_details(request, context)
+        return excel_file_path
 
     if sql_query.split(",")[-1] == "tpa_cover_letter":
-        tpa_cover_letter(request, context)
+        excel_file_path = tpa_cover_letter(request, context)
+        return excel_file_path
+
+    if sql_query.split(",")[-1] == "revenue_data_with_dates":
+        excel_file_path = revenue_data_with_dates(request, context)
+        return excel_file_path
 
 
 def patient_wise_bill_details(request, context):
@@ -372,11 +380,13 @@ def patient_wise_bill_details(request, context):
         column=column_name,
     )
 
-    if not patientwise_bill_details_data:
-        context["error"] = "Sorry!!! No Data Found"
-        return render(request, "reports/one_for_all.html", context)
-
-    else:
+    if patientwise_bill_details_data:
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=patientwise_bill_details_data,
+            column=column_name,
+        )
+        return excel_file_path
         return FileResponse(
             open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
         )
@@ -408,12 +418,33 @@ def tpa_cover_letter(request, context):
             page_name=context["page_name"],
         )
 
-    if not tpa_cover_letter_value:
-        context["error"] = "Sorry!!! No Data Found"
+    if tpa_cover_letter_value:
+        return excel_file_path
+        # return render(request,'reports/one_for_all.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+
+
+def revenue_data_with_dates(request, context):
+    # Manually format To Date fro Sql Query
+    from_date = date_formater(request.POST["from_date"])
+    to_date = date_formater(request.POST["to_date"])
+
+    # Select Function from model
+    try:
+        facility_code = request.POST["facility_dropdown"]
+    except MultiValueDictKeyError:
+        context["error"] = "😒 Please Select a facility from the dropdown list"
         return render(request, "reports/one_for_all.html", context)
 
-    else:
-        return FileResponse(
-            open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+    db = Ora()
+    revenue_data_with_dates_value, column_name = db.get_revenue_data_with_dates(
+        facility_code, from_date, to_date
+    )
+
+    if revenue_data_with_dates_value:
+        excel_file_path = excel_generator(
+            page_name=context["page_name"],
+            data=revenue_data_with_dates_value,
+            column=column_name,
         )
-        # return render(request,'reports/one_for_all.html', {'tpa_cover_letter_value':tpa_cover_letter_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm()})
+        return excel_file_path
+        # return render(request,'reports/one_for_all.html', {'revenue_data_with_dates_value':revenue_data_with_dates_value, 'user_name':request.user.get_full_name(),'date_form' : DateForm(),'facilities' : facility})

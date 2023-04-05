@@ -211,6 +211,252 @@ class Ora:
 
         return gettpa_cover_letter_data, column_name
 
+    def get_revenue_data_with_dates(self, facility_code, from_date, to_date):
+        revenue_data_with_dates_query = f""" 
+        
+        
+        CREATE OR REPLACE FORCE VIEW revenue_data_vw (ser_date,
+                                             ser_time,
+                                             txn_date,
+                                             txn_time,
+                                             serv_code,
+                                             serv_desc,
+                                             serv_grp_code,
+                                             serv_grp_desc,
+                                             physician_id,
+                                             patienttype,
+                                             patient_id,
+                                             pat_name,
+                                             amount,
+                                             disc_amount,
+                                             rounding_amount,
+                                             addl_chg,
+                                             episode_id,
+                                             encounter_id,
+                                             store_code,
+                                             blng_class_code,
+                                             bed_class_code,
+                                             gl_code,
+                                             dept_code_rev
+                                            )
+AS
+   SELECT NULL ser_date, NULL ser_time,
+                                       --a.acct_dept_code dept_code, e.long_desc dept_name,
+          NULL txn_date, NULL txn_time, NULL serv_code, NULL serv_desc,
+          NULL serv_grp_code, NULL serv_grp_desc, NULL physician_id,
+          NULL patienttype, NULL patient_id, NULL pat_name,
+          NVL (f.amount, 0) amount, NVL (d.amount, 0) disc_amount,
+          NVL (o.amount, 0) rounding_amount, 0 addl_chg, NULL episode_id,
+          NULL encounter_id, NULL store_code, NULL blng_class_code,
+          NULL bed_class_code, f.main_acc1_code gl_code,
+          f.dept_code dept_code_rev
+     FROM (SELECT   gl.main_acc1_code, gl.dept_code,
+                    DECODE (gl.trx_type_code,
+                            'F', SUM (gl.distribution_amt),
+                            0
+                           ) amount
+               FROM bl_gl_distribution gl
+              WHERE gl.operating_facility_id in ({facility_code})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND gl.main_acc1_code = '222410'
+                AND gl.trx_type_code = 'F'
+           GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) f,
+          (SELECT   gl.main_acc1_code, gl.dept_code,
+                    DECODE (gl.trx_type_code,
+                            'D', SUM (gl.distribution_amt),
+                            0
+                           ) amount
+               FROM bl_gl_distribution gl
+              WHERE gl.operating_facility_id in ({facility_code})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND gl.main_acc1_code = '222410'
+                AND gl.trx_type_code = 'D'
+           GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) d,
+          (SELECT   gl.main_acc1_code, gl.dept_code,
+                    DECODE (gl.trx_type_code,
+                            'O', SUM (gl.distribution_amt),
+                            0
+                           ) amount
+               FROM bl_gl_distribution gl
+              WHERE gl.operating_facility_id  in ({facility_code})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND gl.main_acc1_code = '222410'
+                AND gl.trx_type_code = 'O'
+           GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) o
+    WHERE f.main_acc1_code = d.main_acc1_code(+) AND f.main_acc1_code = o.main_acc1_code(+)
+   UNION ALL
+   SELECT TO_CHAR (a.service_date, 'DD/MM/YY') ser_date,
+          TO_CHAR (a.service_date, 'HH24:MI:SS') ser_time,
+          
+          --a.acct_dept_code dept_code, e.long_desc dept_name,
+          TO_CHAR (a.trx_date, 'DD/MM/YY') txn_date,
+          TO_CHAR (a.trx_date, 'HH24:MI:SS') txn_time,
+          a.blng_serv_code serv_code, c.long_desc serv_desc,
+          c.serv_grp_code serv_grp_code, d.long_desc serv_grp_desc,
+          a.physician_id physician_id,
+          DECODE (a.episode_type,
+                  'I', 'IP',
+                  'O', 'OP',
+                  'E', 'Emergency',
+                  'R', 'Referral',
+                  'D', 'Daycare'
+                 ) patienttype,
+          a.patient_id patient_id, b.short_name pat_name,
+          (CASE
+              WHEN a.episode_type <> 'R'
+              AND ((a.addl_charge_amt_in_charge * -1) = gl.distribution_amt)
+                 THEN
+                     --decode(gl.main_Acc1_code ,140211,(a.addl_charge_amt_in_charge*-1),0)
+                     DECODE (gl.main_acc1_code,
+                             140211, (a.addl_charge_amt_in_charge * -1),
+                             140212, (a.addl_charge_amt_in_charge * -1),
+                             140213, (a.addl_charge_amt_in_charge * -1),
+                             140214, (a.addl_charge_amt_in_charge * -1),
+                             0
+                            )
+              ELSE DECODE (gl.trx_type_code, 'F', gl.distribution_amt, 0)
+           END
+          ) amount,
+          
+          --DECODE(gl.trx_type_code,'F',gl.distribution_amt, 0)amount,
+          DECODE (gl.trx_type_code, 'D', gl.distribution_amt, 0) disc_amount,
+          DECODE (gl.trx_type_code,
+                  'O', gl.distribution_amt,
+                  0
+                 ) rounding_amt,
+          
+          -- ADDED ON 30/10/2012
+          (CASE
+              WHEN a.episode_type = 'R' AND (gl.rule_code LIKE 'RULE%')
+                 THEN (a.addl_charge_amt_in_charge)
+              WHEN a.episode_type <> 'R' AND (gl.rule_code LIKE 'S%')
+                 THEN (a.addl_charge_amt_in_charge)
+              WHEN a.episode_type <> 'R'
+              AND ((a.addl_charge_amt_in_charge * -1) = gl.distribution_amt)
+                 THEN 0
+              ELSE 0
+           END
+          ) addl_chg,
+          
+          -- 30/10/2012 commented DECODE (a.episode_type,'R', NVL (a.addl_charge_amt_in_charge, 0),0) addl_chg,
+          a.episode_id episode_id, a.encounter_id encounter_id,
+          a.store_code store_code, a.blng_class_code blng_class_code,
+          a.bed_class_code bed_class_code, gl.main_acc1_code gl_code,
+          gl.dept_code dept_code_rev
+     FROM bl_gl_distribution gl,
+          bl_patient_charges_folio a,
+          mp_patient_mast b,
+          bl_blng_serv c,
+          bl_blng_serv_grp d,
+          am_dept_lang_vw e
+    WHERE a.operating_facility_id  in ({facility_code})
+      AND a.patient_id = gl.patient_id
+      AND a.patient_id = b.patient_id
+      AND a.trx_doc_ref = gl.trx_doc_ref
+      AND a.trx_doc_ref_line_num = gl.trx_doc_ref_line_num
+      AND a.trx_doc_ref_seq_num = gl.trx_doc_ref_seq_num
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      AND gl.main_acc1_code <> '222410'
+      AND a.blng_serv_code = c.blng_serv_code
+      AND c.serv_grp_code = d.serv_grp_code
+      AND a.acct_dept_code = e.dept_code(+)
+   UNION ALL
+   SELECT TO_CHAR (a.doc_date, 'DD/MM/YY') ser_date,
+          TO_CHAR (a.doc_date, 'HH24:MI:SS') ser_time,
+          
+          --gl.dept_code dept_code, e.long_desc dept_name,
+          TO_CHAR (gl.trx_date, 'DD/MM/YY') txn_date,
+          TO_CHAR (gl.trx_date, 'HH24:MI:SS') txn_time, NULL serv_code,
+          'Discount' serv_desc, NULL serv_grp_code, NULL serv_grp_desc,
+          NULL physician_id,
+          DECODE (a.episode_type,
+                  'I', 'IP',
+                  'O', 'OP',
+                  'E', 'Emergency',
+                  'R', 'Referral',
+                  'D', 'Daycare'
+                 ) patienttype,
+          a.patient_id patient_id, b.short_name pat_name, 0 amount,
+          NVL (a.overall_disc_amt, 0) disc_amount, 0 rounding_amt, 0 addl_chg,
+          a.episode_id episode_id, a.encounter_id encounter_id, NULL, NULL,
+          a.bed_class_code bed_class_code, gl.main_acc1_code gl_code,
+          gl.dept_code dept_code_rev
+     FROM bl_gl_distribution gl,
+          bl_bill_hdr a,
+          mp_patient_mast b,
+          am_dept_lang_vw e
+    WHERE a.operating_facility_id  in ({facility_code})
+      AND a.patient_id = gl.patient_id
+      AND a.patient_id = b.patient_id
+      AND a.doc_date = gl.trx_date
+      AND a.doc_type_code = gl.doc_type
+      AND a.doc_num = gl.doc_no
+      AND a.overall_disc_amt <> 0
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      --05/07/2012 AND gl.main_acc1_code  in  ('222410','409998','400570','400590','400580','400600','400610','400620','400630','400640','400650','400660','400670','400680')  -- ONLY DISCOUNT
+      AND gl.main_acc1_code IN
+             ('409998', '400575')
+--, '400570', '400590', '400580', '400600','400610', '400620', '400630', '400640', '400650', '400660','400670', '400680')-- ONLY DISCOUNT
+      AND gl.trx_type_code = 'D'
+      AND gl.dept_code = e.dept_code(+)
+   UNION ALL
+   SELECT TO_CHAR (a.doc_date, 'DD/MM/YY') ser_date,
+          TO_CHAR (a.doc_date, 'HH24:MI:SS') ser_time,
+          
+          --gl.dept_code dept_code, e.long_desc dept_name,
+          TO_CHAR (gl.trx_date, 'DD/MM/YY') txn_date,
+          TO_CHAR (gl.trx_date, 'HH24:MI:SS') txn_time, NULL serv_code,
+          'Rounding off' serv_desc, NULL serv_grp_code, NULL serv_grp_desc,
+          NULL physician_id,
+          DECODE (a.episode_type,
+                  'I', 'IP',
+                  'O', 'OP',
+                  'E', 'Emergency',
+                  'R', 'Referral',
+                  'D', 'Daycare'
+                 ) patienttype,
+          a.patient_id patient_id, b.short_name pat_name, 0 amount,
+          0 disc_amount, NVL (a.bill_rounding_amt, 0) rounding_amt,
+          0 addl_chg, a.episode_id episode_id, a.encounter_id encounter_id,
+          NULL, NULL, a.bed_class_code bed_class_code,
+          gl.main_acc1_code gl_code, gl.dept_code dept_code_rev
+     FROM bl_gl_distribution gl,
+          bl_bill_hdr a,
+          mp_patient_mast b,
+          am_dept_lang_vw e
+    WHERE a.operating_facility_id in ({facility_code})
+      AND a.patient_id = gl.patient_id
+      AND a.patient_id = b.patient_id
+      AND a.doc_date = gl.trx_date
+      AND a.doc_type_code = gl.doc_type
+      AND a.doc_num = gl.doc_no
+      AND a.bill_rounding_amt <> 0
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      AND gl.main_acc1_code IN ('401220')                 -- ONLY ROUNDING OFF
+      AND gl.trx_type_code = 'O'
+      AND gl.dept_code = e.dept_code(+)
+
+
+
+
+"""
+
+        self.cursor.execute(revenue_data_with_dates_query)
+
+        revenue_data_with_dates_query_2 = f""" select * from revenue_data_vw """
+
+        self.cursor.execute(revenue_data_with_dates_query_2)
+        revenue_data_with_dates_data = self.cursor.fetchall()
+
+        column_name = [i[0] for i in self.cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return revenue_data_with_dates_data, column_name
+
 
 if __name__ == "__main__":
     a = Ora()

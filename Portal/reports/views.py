@@ -230,7 +230,13 @@ def one_for_all(request, pk):
         variables = {}
         sql_query = report.report_sql_query
         if "special_case" in sql_query:
-            special_case_handler(request, sql_query, context)
+            excel_file_path = special_case_handler(request, sql_query, context)
+            if not excel_file_path:
+                context["error"] = "Sorry!!! No Data Found"
+            else:
+                return FileResponse(
+                    open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
+                )
 
         if "dropdown_options" in context:
             sql_query, variables = sql_query_formater(sql_query, request)

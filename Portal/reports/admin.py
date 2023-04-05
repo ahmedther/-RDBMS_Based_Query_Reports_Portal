@@ -16,6 +16,12 @@ class UserAdmin(BaseUserAdmin):
     inlines = (EmployeeInline,)
 
 
+class QueryReportsAdmin(admin.ModelAdmin):
+    search_fields = [
+        "report_name__name"
+    ]  # replace 'name' with the actual field name of Group model
+
+
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
@@ -24,7 +30,7 @@ admin.site.register(User, UserAdmin)
 admin.site.register(IAACR)
 admin.site.register(FacilityDropdown)
 admin.site.register(NavigationHeaders)
-admin.site.register(QueryReports)
+admin.site.register(QueryReports, QueryReportsAdmin)
 
 
 # CHnage admin Panel
