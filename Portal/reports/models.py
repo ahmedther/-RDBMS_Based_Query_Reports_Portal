@@ -36,8 +36,6 @@ class NavigationHeaders(models.Model):
         return self.headings
 
 
-
-
 class QueryReports(models.Model):
     report_heading = models.ForeignKey(
         NavigationHeaders,
@@ -105,7 +103,7 @@ class QueryReports(models.Model):
     )
 
     def __str__(self):
-        return self.report_name.name
+        return f"{self.pk} - {self.report_name.name}"
 
 
 Group.add_to_class(

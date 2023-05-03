@@ -354,7 +354,7 @@ def patient_wise_bill_details(request, context):
         episode_code = request.POST["dropdown_options2"]
     except MultiValueDictKeyError:
         context["error"] = "😒 Please Select a facility from the dropdown list"
-        return render(request, "reports/one_for_all.html", context)
+        return context
 
     # Convert and Split all Episode and UHID with commer separated values and then to tuple example : ('KH1000', 'KH1000')
     episode_id = request.POST["Episode_ID"]
@@ -425,19 +425,27 @@ def tpa_cover_letter(request, context):
 
 def revenue_data_with_dates(request, context):
     # Manually format To Date fro Sql Query
-    from_date = date_formater(request.POST["from_date"])
-    to_date = date_formater(request.POST["to_date"])
+    # from_date = date_formater(request.POST["from_date"])
+    # to_date = date_formater(request.POST["to_date"])
+    from_date = request.POST["Date"]
+    try:
+        datetime.strptime(from_date, "%d-%b-%Y")
+    except ValueError:
+        context[
+            "error"
+        ] = " ❌ Incorrect date format.\n Please enter a date format in dd-Mon-yyyy. \n For Example 10-Mar-1993"
+        return context
 
     # Select Function from model
     try:
         facility_code = request.POST["facility_dropdown"]
     except MultiValueDictKeyError:
         context["error"] = "😒 Please Select a facility from the dropdown list"
-        return render(request, "reports/one_for_all.html", context)
+        return context
 
     db = Ora()
     revenue_data_with_dates_value, column_name = db.get_revenue_data_with_dates(
-        facility_code, from_date, to_date
+        facility_code, f"'{from_date}'", None
     )
 
     if revenue_data_with_dates_value:

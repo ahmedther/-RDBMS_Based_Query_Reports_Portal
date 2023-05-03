@@ -17,9 +17,7 @@ class UserAdmin(BaseUserAdmin):
 
 
 class QueryReportsAdmin(admin.ModelAdmin):
-    search_fields = [
-        "report_name__name"
-    ]  # replace 'name' with the actual field name of Group model
+    search_fields = ["id", "report_name__name"]
 
 
 # Re-register UserAdmin

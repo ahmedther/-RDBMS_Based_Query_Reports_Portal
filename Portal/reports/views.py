@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
@@ -176,121 +177,138 @@ def nav(request):
 @login_required(login_url="login")
 @check_if_user_is_auth
 def one_for_all(request, pk):
-    report = QueryReports.objects.get(pk=pk)
-    context = {
-        "user_name": request.user.get_full_name(),
-        "page_name": report.report_name.name.split("-")[-1],
-    }
-    if report.sub_sql_query:
-        dropdown_options = get_dropdown_options(
-            report.sub_sql_query,
-            report.dropdown_option_value,
-            report.dropdown_option_name1,
-            report.dropdown_option_name2,
-        )
-        context["dropdown_options"] = dropdown_options
+    try:
+        report = QueryReports.objects.get(pk=pk)
+        context = {
+            "user_name": request.user.get_full_name(),
+            "page_name": report.report_name.name.split("-")[-1],
+        }
+        if report.sub_sql_query:
+            dropdown_options = get_dropdown_options(
+                report.sub_sql_query,
+                report.dropdown_option_value,
+                report.dropdown_option_name1,
+                report.dropdown_option_name2,
+            )
+            context["dropdown_options"] = dropdown_options
 
-    if report.facility_template:
-        facility = get_facility_dropdown(request)
-        context["facilities"] = facility
-        context["facility_template"] = "facility_template"
+        if report.facility_template:
+            facility = get_facility_dropdown(request)
+            context["facilities"] = facility
+            context["facility_template"] = "facility_template"
 
-    if report.date_template:
-        context["date_template"] = "date_template"
-        context["date_form"] = DateForm()
+        if report.date_template:
+            context["date_template"] = "date_template"
+            context["date_form"] = DateForm()
 
-    if report.pharmacy_iaarc:
-        dropdown_options1 = get_pharmacy_IAARC()
-        context["dropdown_options1"] = dropdown_options1
+        if report.pharmacy_iaarc:
+            dropdown_options1 = get_pharmacy_IAARC()
+            context["dropdown_options1"] = dropdown_options1
 
-    if report.dropdown_options_value:
-        dropdown_options2 = get_custom_dropdowns(
-            report.dropdown_options_value, report.dropdown_options_name
-        )
-        context["dropdown_options2"] = dropdown_options2
+        if report.dropdown_options_value:
+            dropdown_options2 = get_custom_dropdowns(
+                report.dropdown_options_value, report.dropdown_options_name
+            )
+            context["dropdown_options2"] = dropdown_options2
 
-    if report.time_template:
-        context["time_template"] = "time_template"
+        if report.time_template:
+            context["time_template"] = "time_template"
 
-    if report.input_tags:
-        input_tags = get_input_tags(report.input_tags)
-        context["input_tags"] = input_tags
+        if report.input_tags:
+            input_tags = get_input_tags(report.input_tags)
+            context["input_tags"] = input_tags
 
-    if report.textbox:
-        textbox = get_input_tags(report.textbox)
-        context["textbox"] = textbox
+        if report.textbox:
+            textbox = get_input_tags(report.textbox)
+            context["textbox"] = textbox
 
-    if report.http_response:
-        context["http_response"] = True
+        if report.http_response:
+            context["http_response"] = True
 
-    if request.method == "GET":
+        if request.method == "GET":
+            return render(request, "reports/one_for_all.html", context)
+    except Exception as error:
+        context["error"] = f"❌ {error} ❌"
         return render(request, "reports/one_for_all.html", context)
 
-    elif request.method == "POST":
-        variables = {}
-        sql_query = report.report_sql_query
-        if "special_case" in sql_query:
-            excel_file_path = special_case_handler(request, sql_query, context)
-            if not excel_file_path:
+    try:
+        if request.method == "POST":
+            variables = {}
+            sql_query = report.report_sql_query
+            if "special_case" in sql_query:
+                excel_file_path = special_case_handler(request, sql_query, context)
+                if not excel_file_path:
+                    context["error"] = "Sorry!!! No Data Found"
+                if isinstance(excel_file_path, dict):
+                    return render(request, "reports/one_for_all.html", excel_file_path)
+                else:
+                    return FileResponse(
+                        open(excel_file_path, "rb"),
+                        content_type="application/vnd.ms-excel",
+                    )
+
+            if "dropdown_options" in context:
+                sql_query, variables = sql_query_formater(sql_query, request)
+
+            if "dropdown_options1" in context:
+                sql_query, variables = sql_query_formater(sql_query, request)
+
+            if "dropdown_options2" in context:
+                sql_query, variables = sql_query_formater(sql_query, request)
+
+            if "facility_template" in context:
+                try:
+                    sql_query, variables = sql_query_formater(sql_query, request)
+
+                except MultiValueDictKeyError:
+                    context[
+                        "error"
+                    ] = "😒 Please Select a facility from the dropdown list"
+                    return render(request, "reports/one_for_all.html", context)
+
+            if "date_template" in context:
+                if "time_template" in context:
+                    sql_query, variables = sql_query_formater(
+                        sql_query, request, type="date_time"
+                    )
+                else:
+                    sql_query, variables = sql_query_formater(sql_query, request)
+
+            if "input_tags" in context:
+                sql_query, variables = sql_query_formater(
+                    sql_query,
+                    request,
+                    type="input_tags",
+                    other_values=report.input_tags,
+                )
+
+            if "textbox" in context:
+                sql_query, variables = sql_query_formater(
+                    sql_query, request, type="input_tags", other_values=report.textbox
+                )
+
+            db = Ora()
+            sql_query = sql_query.format(**variables)
+            data, column = db.one_for_all(sql_query)
+
+            if not data:
                 context["error"] = "Sorry!!! No Data Found"
+                return render(request, "reports/one_for_all.html", context)
+
+            if "http_response" in context:
+                pd_dataframe = pd.DataFrame(data=data, columns=list(column))
+                return HttpResponse(pd_dataframe.to_html())
+
             else:
+                excel_file_path = excel_generator(
+                    page_name=context["page_name"], column=column, data=data
+                )
+                db.close_connection()
                 return FileResponse(
                     open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
                 )
+                # return render(request,'reports/one_for_all.html', {'stock_data':stock_data, 'user_name':request.user.get_full_name()})
 
-        if "dropdown_options" in context:
-            sql_query, variables = sql_query_formater(sql_query, request)
-
-        if "dropdown_options1" in context:
-            sql_query, variables = sql_query_formater(sql_query, request)
-
-        if "dropdown_options2" in context:
-            sql_query, variables = sql_query_formater(sql_query, request)
-
-        if "facility_template" in context:
-            try:
-                sql_query, variables = sql_query_formater(sql_query, request)
-
-            except MultiValueDictKeyError:
-                context["error"] = "😒 Please Select a facility from the dropdown list"
-                return render(request, "reports/one_for_all.html", context)
-
-        if "date_template" in context:
-            if "time_template" in context:
-                sql_query, variables = sql_query_formater(
-                    sql_query, request, type="date_time"
-                )
-            else:
-                sql_query, variables = sql_query_formater(sql_query, request)
-
-        if "input_tags" in context:
-            sql_query, variables = sql_query_formater(
-                sql_query, request, type="input_tags", other_values=report.input_tags
-            )
-
-        if "textbox" in context:
-            sql_query, variables = sql_query_formater(
-                sql_query, request, type="input_tags", other_values=report.textbox
-            )
-
-        db = Ora()
-        sql_query = sql_query.format(**variables)
-        data, column = db.one_for_all(sql_query)
-
-        if not data:
-            context["error"] = "Sorry!!! No Data Found"
-            return render(request, "reports/one_for_all.html", context)
-
-        if "http_response" in context:
-            pd_dataframe = pd.DataFrame(data=data, columns=list(column))
-            return HttpResponse(pd_dataframe.to_html())
-
-        else:
-            excel_file_path = excel_generator(
-                page_name=context["page_name"], column=column, data=data
-            )
-            db.close_connection()
-            return FileResponse(
-                open(excel_file_path, "rb"), content_type="application/vnd.ms-excel"
-            )
-            # return render(request,'reports/one_for_all.html', {'stock_data':stock_data, 'user_name':request.user.get_full_name()})
+    except Exception as error:
+        context["error"] = f"❌ {error} ❌"
+        return render(request, "reports/one_for_all.html", context)

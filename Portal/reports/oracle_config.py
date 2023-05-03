@@ -109,7 +109,7 @@ class Ora:
         PACKAGE_SEQ_NO,ADDL_FACTOR_NUM
         from bl_patient_charges_folio A where 
         a.OPERATING_FACILITY_ID in ({facility_code})
-        and a.EPISODE_TYPE in {episode_code} 
+        and a.EPISODE_TYPE in ({episode_code}) 
         and a.patient_id in {uhid_id}
         --BILL_DOC_NUM in('')
         and trx_status is null
@@ -257,7 +257,7 @@ AS
                            ) amount
                FROM bl_gl_distribution gl
               WHERE gl.operating_facility_id in ({facility_code})
-                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
                 AND gl.main_acc1_code = '222410'
                 AND gl.trx_type_code = 'F'
            GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) f,
@@ -268,7 +268,7 @@ AS
                            ) amount
                FROM bl_gl_distribution gl
               WHERE gl.operating_facility_id in ({facility_code})
-                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
                 AND gl.main_acc1_code = '222410'
                 AND gl.trx_type_code = 'D'
            GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) d,
@@ -279,7 +279,7 @@ AS
                            ) amount
                FROM bl_gl_distribution gl
               WHERE gl.operating_facility_id  in ({facility_code})
-                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+                AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
                 AND gl.main_acc1_code = '222410'
                 AND gl.trx_type_code = 'O'
            GROUP BY gl.main_acc1_code, gl.dept_code, gl.trx_type_code) o
@@ -355,7 +355,7 @@ AS
       AND a.trx_doc_ref = gl.trx_doc_ref
       AND a.trx_doc_ref_line_num = gl.trx_doc_ref_line_num
       AND a.trx_doc_ref_seq_num = gl.trx_doc_ref_seq_num
-      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
       AND gl.main_acc1_code <> '222410'
       AND a.blng_serv_code = c.blng_serv_code
       AND c.serv_grp_code = d.serv_grp_code
@@ -392,7 +392,7 @@ AS
       AND a.doc_type_code = gl.doc_type
       AND a.doc_num = gl.doc_no
       AND a.overall_disc_amt <> 0
-      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
       --05/07/2012 AND gl.main_acc1_code  in  ('222410','409998','400570','400590','400580','400600','400610','400620','400630','400640','400650','400660','400670','400680')  -- ONLY DISCOUNT
       AND gl.main_acc1_code IN
              ('409998', '400575')
@@ -431,7 +431,7 @@ AS
       AND a.doc_type_code = gl.doc_type
       AND a.doc_num = gl.doc_no
       AND a.bill_rounding_amt <> 0
-      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({to_date})
+      AND trunc(gl.trx_date) BETWEEN {from_date} and to_date({from_date})
       AND gl.main_acc1_code IN ('401220')                 -- ONLY ROUNDING OFF
       AND gl.trx_type_code = 'O'
       AND gl.dept_code = e.dept_code(+)
