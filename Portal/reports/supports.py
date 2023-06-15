@@ -109,7 +109,7 @@ def excel_generator(data, column, page_name):
         # set the column length
         worksheet.set_column(i, i, column_len)
 
-    generate_excel.save()
+    generate_excel.close()
     return excel_file_path
 
 
@@ -180,8 +180,8 @@ def excel_generator_tpa(data, column, page_name):
     ).value = excel_data["PATIENT_ID"]
 
     # Close workbook
-    tpa_workbook.save(excel_file_path)
-    tpa_workbook.close()
+    tpa_workbook.close(excel_file_path)
+    # tpa_workbook.close()
     xlwing_app.quit()
 
     return excel_file_path

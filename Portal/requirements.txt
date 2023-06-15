@@ -4,6 +4,6 @@ cx_Oracle
 pandas
 XlsxWriter
 psycopg2
-gunicorn
 xlwings
-pywin32
+uwsgi
+#pywin32

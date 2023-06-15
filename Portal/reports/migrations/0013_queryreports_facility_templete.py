@@ -16,3 +16,4 @@ class Migration(migrations.Migration):
             field=models.BooleanField(blank=True, default=False, verbose_name='Facility Template'),
         ),
     ]
+    

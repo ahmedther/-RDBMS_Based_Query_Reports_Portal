@@ -1,0 +1,45 @@
+version: '1.1'
+
+
+services:
+  app:
+    build: .
+    restart: always
+    image: ehis_reports_portal_docker_image
+    container_name: ehis_reports_portal_docker_container
+    volumes:
+      - .:/ehis_reports_portal/
+    # ports:
+    #   - 9001:9001
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  nginx:
+    build: 
+      context: ./nginx
+    image: ehis_reports_portal_nginx_image
+    container_name: ehis_reports_portal_nginx_container
+    restart: always
+    volumes:
+      - ./static:/ehis_reports_portal/static
+    env_file:
+      - .env
+    ports:
+      - 8001:8001
+    depends_on:
+      - postgres
+
+  postgres:
+    build:
+      context: ./postgresql
+    image: ehis_reports_portal_postgresql_image
+    container_name: ehis_reports_portal_postgresql_container
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - 5431:5432
+

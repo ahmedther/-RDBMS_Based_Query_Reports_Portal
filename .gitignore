@@ -8,3 +8,4 @@ pywin32_testall.py
 vba_extract.py
 __pycache__/*
 \Portal\reports\migrations\__pycache__\*
+postgresql

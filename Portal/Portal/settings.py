@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 
+# from dotenv import load_dotenv
+# load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,37 +28,12 @@ SECRET_KEY = "django-insecure-(ie6=js6l2!i0y=4az2*vgsz*q$isj9rar4oa95%j%r$bq%f_9
 # SECURITY WARNING: don't run with debug turned on in production! s
 
 
-# DEBUG = True
+DEBUG = True
+# DEBUG = bool(os.getenv("DEBUG", False))
 
-DEBUG = False
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "172.20.100.81",
-    "http://localhost:8001",
-    "http://172.20.100.81:8001",
-    "http://localhost:8002",
-    "http://172.20.100.81:8002",
-    "172.20.200.40",
-    "http://172.20.200.40:8001",
-    "www.kdahlinux.com:8001",
-]
-
-
-CSRF_TRUSTED_ORIGINS = [
-    "127.0.0.1",
-    "localhost",
-    "172.20.100.81",
-    "http://localhost:8001",
-    "http://172.20.100.81:8001",
-    "http://localhost:8002",
-    "http://172.20.100.81:8002",
-    "172.20.200.40",
-    "http://172.20.200.40:8001",
-    "www.kdahlinux.com:8001",
-]
-
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "*").split(",")
 
 # Application definition
 
@@ -108,11 +86,11 @@ WSGI_APPLICATION = "Portal.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "rdbms_query_reports_database",
-        "USER": "postgres",
-        "PASSWORD": "ahmed",
-        "HOST": "172.20.100.81",
-        "PORT": "5432",
+        "NAME": os.environ.get("POSTGRES_DB"),
+        "USER": os.environ.get("POSTGRES_USER"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
+        "HOST": os.environ.get("POSTGRES_HOST"),
+        "PORT": os.environ.get("POSTGRES_PORT"),
     }
 }
 # DATABASES = {
@@ -199,6 +177,8 @@ STATIC_URL = "static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -208,6 +188,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-SESSION_COOKIE_AGE = 86400
+SESSION_COOKIE_AGE = 10800
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

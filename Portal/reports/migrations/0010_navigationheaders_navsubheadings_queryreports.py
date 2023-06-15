@@ -5,36 +5,88 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('auth', '0013_group_page_permission'),
-        ('reports', '0009_delete_grouppermission'),
+        ("reports", "0009_delete_grouppermission"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='NavigationHeaders',
+            name="NavigationHeaders",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('headings', models.CharField(max_length=255)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("headings", models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='NavSubHeadings',
+            name="NavSubHeadings",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('sub_heading', models.CharField(max_length=255)),
-                ('header', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sub_headings', to='reports.navigationheaders')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("sub_heading", models.CharField(max_length=255)),
+                (
+                    "header",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sub_headings",
+                        to="reports.navigationheaders",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='QueryReports',
+            name="QueryReports",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('report_sql_query', models.TextField()),
-                ('report_heading', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reports_heading', to='reports.navigationheaders')),
-                ('report_name', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='report_name', to='auth.group')),
-                ('report_subheading', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='reports_subheading', to='reports.navsubheadings')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("report_sql_query", models.TextField()),
+                (
+                    "report_heading",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="reports_heading",
+                        to="reports.navigationheaders",
+                    ),
+                ),
+                (
+                    "report_name",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="report_name",
+                        to="auth.group",
+                    ),
+                ),
+                (
+                    "report_subheading",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="reports_subheading",
+                        to="reports.navsubheadings",
+                    ),
+                ),
             ],
         ),
     ]
