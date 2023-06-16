@@ -16,6 +16,9 @@ while true; do
   sleep 1
 done
 
+
 # python manage.py runserver 0.0.0.0:9001
+
+gunicorn --workers 3 --timeout 86400 --bind 0.0.0.0:8002 Portal.wsgi:application &
 
 uwsgi --ini /ehis_reports_portal/uwsgi/uwsgi.ini

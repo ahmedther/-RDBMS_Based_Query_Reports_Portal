@@ -6,4 +6,5 @@ XlsxWriter
 psycopg2
 xlwings
 uwsgi
+gunicorn
 #pywin32
