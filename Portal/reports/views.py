@@ -260,6 +260,7 @@ def one_for_all(request, pk):
                 try:
                     sql_query, variables = sql_query_formater(sql_query, request)
 
+
                 except MultiValueDictKeyError:
                     context[
                         "error"
@@ -288,7 +289,9 @@ def one_for_all(request, pk):
                 )
 
             db = Ora()
+            print(variables)
             sql_query = sql_query.format(**variables)
+            print(sql_query)
             data, column = db.one_for_all(sql_query)
 
             if not data:

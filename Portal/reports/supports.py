@@ -309,7 +309,6 @@ def sql_query_formater(sql_query: str, request, type=None, other_values=None):
         "from_date": date_formater(request.POST.get("from_date", "")),
         "to_date": date_formater(request.POST.get("to_date", "")),
     }
-
     if type == "input_tags":
         input_tag_values = strip_input_vaules(other_values)
         for inputs in input_tag_values:
@@ -323,6 +322,7 @@ def sql_query_formater(sql_query: str, request, type=None, other_values=None):
 
     # Remove empty or None values
     variables = {k: v for k, v in variables.items() if v}
+
     return sql_query, variables
 
 

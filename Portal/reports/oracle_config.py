@@ -113,7 +113,7 @@ class Ora:
         and a.patient_id in {uhid_id}
         --BILL_DOC_NUM in('')
         and trx_status is null
-
+        
 """
         if from_date == "":
             from_date = None
